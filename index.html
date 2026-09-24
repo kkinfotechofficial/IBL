@@ -2160,6 +2160,14 @@ Management</textarea></div>
                 localStorage.setItem(this._prefix + 'docs_' + type, JSON.stringify(docs));
             },
 
+            removeDocumentsLocal(type) {
+                try {
+                    localStorage.removeItem(this._prefix + 'docs_' + type);
+                } catch (e) {
+                    console.warn('Unable to remove local document cache:', e);
+                }
+            },
+
             getUserLogsLocal() {
                 try { const data = localStorage.getItem(this._prefix + 'user_logs'); return data ? JSON.parse(data) : []; } catch { return []; }
             },
@@ -2265,6 +2273,39 @@ Management</textarea></div>
                     console.error('SheetAPI Error:', error);
                     return this.fallbackToLocal(action, payload);
                 }
+            },
+
+            // STRICT BACKEND MODE:
+            // Used for business documents. It NEVER falls back to localStorage.
+            async fetchFromSheetStrict(action, payload = {}) {
+                if (!this.isConfigured()) {
+                    throw new Error('Google Apps Script URL is not configured.');
+                }
+
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, payload })
+                });
+
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    throw new Error('Invalid JSON response from Google Apps Script.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(result?.error || `Google Apps Script HTTP error ${response.status}.`);
+                }
+
+                if (!result || result.success === false) {
+                    throw new Error(result?.error || 'Google Sheets backend rejected the request.');
+                }
+
+                return { success: true, ...result };
             },
 
             fallbackToLocal(action, payload) {
@@ -2500,30 +2541,62 @@ Management</textarea></div>
                 }
             }
 
-            const coreTabs = ['gstPage', 'invoicePage', 'receiptPage', 'letterPage', 'palPage', 'doPage'];
+            // IMPORTANT: Google Sheets is the source of truth for tab permissions.
+            // Never automatically grant normal users the core tabs.
             users.forEach(u => {
-                let tabs = u.tabs || [];
-                coreTabs.forEach(t => { if (!tabs.includes(t)) tabs.push(t); });
+                let tabs = Array.isArray(u.tabs) ? [...u.tabs] : [];
+
                 if (u.role === 'admin') {
+                    // Admin-only management tabs remain available to admins.
                     if (!tabs.includes('dashboardPage')) tabs.push('dashboardPage');
                     if (!tabs.includes('usersPage')) tabs.push('usersPage');
                     if (!tabs.includes('dealersPage')) tabs.push('dealersPage');
                 } else {
-                    tabs = tabs.filter(t => t !== 'dashboardPage' && t !== 'usersPage' && t !== 'dealersPage');
+                    // Normal users only get exactly what is stored in Google Sheets.
+                    tabs = tabs.filter(t =>
+                        !['dashboardPage', 'usersPage', 'dealersPage'].includes(t)
+                    );
                 }
-                u.tabs = tabs;
+
+                u.tabs = [...new Set(tabs)];
             });
             return users;
         }
 
         async function saveUsers() {
-            StorageManager.saveUsersLocal(users);
-            if (SheetAPI.isConfigured() && sheetsInitialized) {
-                for (const user of users) {
-                    await SheetAPI.fetchFromSheet('saveUser', { user });
-                }
-                showToast('✅ Users synced to server!', 'success');
+            // User/tab permissions must be persisted to Google Sheets.
+            if (!SheetAPI.isConfigured()) {
+                throw new Error('Google Apps Script URL is not configured.');
             }
+
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) {
+                    throw new Error('Google Sheets backend is unavailable.');
+                }
+            }
+
+            for (const user of users) {
+                const cleanUser = {
+                    ...user,
+                    tabs: [...new Set(Array.isArray(user.tabs) ? user.tabs : [])]
+                };
+
+                const result = await SheetAPI.fetchFromSheetStrict('saveUser', {
+                    user: cleanUser
+                });
+
+                if (!result || result.success !== true) {
+                    throw new Error(
+                        result?.error || `Failed to save permissions for ${user.username || user.name}.`
+                    );
+                }
+            }
+
+            // Local cache is only updated after the backend confirms the save.
+            StorageManager.saveUsersLocal(users);
+            showToast('✅ User permissions saved to Google Sheets.', 'success');
+            return true;
         }
 
         async function loadDealers() {
@@ -2569,41 +2642,100 @@ Management</textarea></div>
         }
 
         async function loadDocs(type) {
-            if (!sheetsInitialized && SheetAPI.isConfigured()) {
-                await initializeGoogleSheets();
+            // Business documents are Google Sheets only. Never read document data
+            // from localStorage when the backend is unavailable.
+            if (!SheetAPI.isConfigured()) {
+                showToast('⚠️ Google Sheets backend is not configured. Document data is unavailable.', 'error');
+                return [];
             }
 
-            const result = await SheetAPI.fetchFromSheet('getDocs', { type });
-            if (result.success) {
-                return result.data || [];
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) {
+                    showToast('⚠️ Google Sheets backend is not connected. Document was not loaded.', 'error');
+                    return [];
+                }
             }
-            return StorageManager.getDocumentsLocal(type) || [];
+
+            try {
+                const result = await SheetAPI.fetchFromSheetStrict('getDocs', { type });
+                if (!result || result.success !== true) {
+                    throw new Error(result?.error || 'Unable to load documents from Google Sheets.');
+                }
+
+                // Remove any legacy local document cache so document data is not
+                // retained in this browser.
+                StorageManager.removeDocumentsLocal(type);
+                return Array.isArray(result.data) ? result.data : [];
+            } catch (error) {
+                console.error(`Backend-only getDocs failed for ${type}:`, error);
+                updateConnectionStatus('red', 'Server Disconnected');
+                showToast(`❌ ${type} could not be loaded from Google Sheets.`, 'error');
+                return [];
+            }
         }
 
         async function saveDocToStorage(type, doc) {
-            let docs = await loadDocs(type);
-            const idx = docs.findIndex(d => d.id === doc.id);
-            if (idx >= 0) {
-                docs[idx] = doc;
-            } else {
-                docs.push(doc);
+            // IMPORTANT: despite the legacy function name, documents are NOT
+            // stored in localStorage. They are written directly to Google Sheets.
+            if (!SheetAPI.isConfigured()) {
+                showToast('❌ Google Sheets backend is not configured. Nothing was saved.', 'error');
+                return null;
             }
-            StorageManager.saveDocumentsLocal(type, docs);
-            if (SheetAPI.isConfigured() && sheetsInitialized) {
-                await SheetAPI.fetchFromSheet('saveDoc', { doc });
-                showToast(`✅ ${type} saved to server!`, 'success');
+
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) {
+                    showToast('❌ Google Sheets backend is unavailable. Nothing was saved.', 'error');
+                    return null;
+                }
             }
-            return doc;
+
+            try {
+                const result = await SheetAPI.fetchFromSheetStrict('saveDoc', { doc });
+                if (!result || result.success !== true) {
+                    throw new Error(result?.error || 'Google Sheets did not confirm the save.');
+                }
+
+                // Explicitly remove any old browser-side document cache.
+                StorageManager.removeDocumentsLocal(type);
+                updateConnectionStatus('green', 'Server Connected ✓');
+                showToast(`✅ ${type.toUpperCase()} saved to Google Sheets.`, 'success');
+                return doc;
+            } catch (error) {
+                console.error(`Backend-only saveDoc failed for ${type}:`, error);
+                updateConnectionStatus('red', 'Server Disconnected');
+                showToast(`❌ ${type.toUpperCase()} was NOT saved. Google Sheets backend error.`, 'error');
+                return null;
+            }
         }
 
         async function deleteDocFromStorage(type, id) {
-            let docs = await loadDocs(type);
-            docs = docs.filter(d => d.id !== id);
-            StorageManager.saveDocumentsLocal(type, docs);
-            if (SheetAPI.isConfigured() && sheetsInitialized) {
-                await SheetAPI.fetchFromSheet('deleteDoc', { type, id });
+            if (!SheetAPI.isConfigured()) {
+                showToast('❌ Google Sheets backend is not configured. Nothing was deleted.', 'error');
+                return false;
             }
-            return true;
+
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) {
+                    showToast('❌ Google Sheets backend is unavailable. Nothing was deleted.', 'error');
+                    return false;
+                }
+            }
+
+            try {
+                const result = await SheetAPI.fetchFromSheetStrict('deleteDoc', { type, id });
+                if (!result || result.success !== true) {
+                    throw new Error(result?.error || 'Google Sheets did not confirm the delete.');
+                }
+                StorageManager.removeDocumentsLocal(type);
+                return true;
+            } catch (error) {
+                console.error(`Backend-only deleteDoc failed for ${type}:`, error);
+                showToast(`❌ ${type.toUpperCase()} was not deleted from Google Sheets.`, 'error');
+                return false;
+            }
         }
 
         async function syncAllToSheet() {
@@ -3433,16 +3565,29 @@ Management</textarea></div>
                 u.name = name;
                 u.email = email;
                 u.role = role;
-                const coreTabs = ['gstPage', 'invoicePage', 'receiptPage', 'letterPage', 'palPage', 'doPage'];
-                if (role === 'admin' && !u.tabs.includes('dashboardPage')) u.tabs.push('dashboardPage');
-                if (role === 'admin' && !u.tabs.includes('dealersPage')) u.tabs.push('dealersPage');
-                if (role !== 'admin') u.tabs = u.tabs.filter(t => t !== 'dashboardPage' && t !== 'usersPage' && t !== 'dealersPage');
-                coreTabs.forEach(t => { if (!u.tabs.includes(t)) u.tabs.push(t); });
-                await saveUsers();
-                renderUserTable();
-                updateDashboardStats();
-                closeModal();
-                alert('User updated successfully!');
+                u.tabs = Array.isArray(u.tabs) ? [...new Set(u.tabs)] : [];
+
+                if (role === 'admin') {
+                    if (!u.tabs.includes('dashboardPage')) u.tabs.push('dashboardPage');
+                    if (!u.tabs.includes('usersPage')) u.tabs.push('usersPage');
+                    if (!u.tabs.includes('dealersPage')) u.tabs.push('dealersPage');
+                } else {
+                    u.tabs = u.tabs.filter(t =>
+                        !['dashboardPage', 'usersPage', 'dealersPage'].includes(t)
+                    );
+                }
+
+                try {
+                    await saveUsers();
+                    await loadUsers();
+                    renderUserTable();
+                    updateDashboardStats();
+                    closeModal();
+                    alert('User updated successfully!');
+                } catch (error) {
+                    console.error('User update failed:', error);
+                    alert('User update failed: ' + error.message);
+                }
             };
             openModal();
         };
@@ -3492,7 +3637,9 @@ Management</textarea></div>
             { id: 'invoicePage', label: 'Invoice' }, { id: 'receiptPage', label: 'Money Receipt' },
             { id: 'letterPage', label: 'Letter Head' }, { id: 'palPage', label: 'PAL' },
             { id: 'doPage', label: 'DO' }];
-            const currentTabs = u.tabs || allTabs.map(t => t.id);
+            // Missing/empty tabs means no normal-user tab access.
+            // Never default to all tabs.
+            const currentTabs = Array.isArray(u.tabs) ? u.tabs : [];
             let checkboxes = allTabs.map(t => { const checked = currentTabs.includes(t.id) ? 'checked' : '';
                 return `<label style="display:block;padding:4px 0;font-weight:400;cursor:pointer;"><input type="checkbox" class="tab-checkbox" value="${t.id}" ${checked} /> ${t.label}</label>`; })
                 .join('');
@@ -3510,13 +3657,41 @@ Management</textarea></div>
                     if (!selected.includes('usersPage')) selected.push('usersPage');
                     if (!selected.includes('dealersPage')) selected.push('dealersPage');
                 }
-                u.tabs = selected;
-                await saveUsers();
-                if (currentUser.id === u.id) { currentUser.tabs = selected;
-                    applyTabPermissions(); }
-                renderUserTable();
-                closeModal();
-                alert(`Tab access updated for ${u.name}`);
+                // Store exactly the selected tabs.
+                u.tabs = [...new Set(selected)];
+
+                try {
+                    await saveUsers();
+
+                    // Re-read permissions from Google Sheets so the UI reflects
+                    // the backend value, not an optimistic local value.
+                    await loadUsers();
+
+                    const freshUser = users.find(x =>
+                        String(x.id) === String(u.id) ||
+                        String(x.username || '').toLowerCase() === String(u.username || '').toLowerCase()
+                    );
+
+                    if (!freshUser) {
+                        throw new Error('Updated user could not be reloaded from Google Sheets.');
+                    }
+
+                    if (currentUser && (
+                        String(currentUser.id) === String(u.id) ||
+                        String(currentUser.username || '').toLowerCase() === String(u.username || '').toLowerCase()
+                    )) {
+                        currentUser = { ...currentUser, ...freshUser };
+                        StorageManager.saveSessionLocal(currentUser);
+                        applyTabPermissions();
+                    }
+
+                    renderUserTable();
+                    closeModal();
+                    alert(`Tab access updated for ${freshUser.name}.`);
+                } catch (error) {
+                    console.error('Tab access update failed:', error);
+                    alert('Tab access was NOT saved: ' + error.message);
+                }
             };
             openModal();
         };
@@ -4367,9 +4542,12 @@ Management</textarea></div>
         // ================================================================
         //  PRINT FUNCTION
         // ================================================================
-        function printDocument(html, title, isPAL = false, isDO = false) {
-            const win = window.open('', '_blank', 'width=794,height=1123,scrollbars=yes');
-            if (!win) { alert('Please allow popups for this site to print.'); return; }
+        function printDocument(html, title, isPAL = false, isDO = false, existingWindow = null) {
+            // Open the print window from the original user click whenever possible.
+            // This prevents mobile/Chrome popup blockers from cancelling the print
+            // window after the asynchronous Google Sheets save completes.
+            const win = existingWindow || window.open('', '_blank', 'width=794,height=1123,scrollbars=yes');
+            if (!win) { alert('Please allow popups for this site to print.'); return false; }
             let extraStyles = '';
             if (isPAL) {
                 extraStyles = `
@@ -4449,34 +4627,148 @@ Management</textarea></div>
                 </head><body>${html}<script>window.onload=function(){window.print();};<\/script></body></html>
             `);
             win.document.close();
+            return true;
         }
 
         // ================================================================
         //  PRINT EVENT HANDLERS
+        //  Every Print button FIRST saves the current document directly to
+        //  Google Sheets. Printing is cancelled if the backend save fails.
+        //  No business document is written to localStorage.
         // ================================================================
-        document.getElementById('printInvoiceBtn').addEventListener('click', () => {
-            addUserLog('PRINT', 'Printed Invoice');
-            printDocument(buildInvoiceHTML(), 'Invoice');
+        async function autoSaveBeforePrint(type, data, title, buildHtml, isPAL = false, isDO = false, logDetails = '') {
+            const printBtn = {
+                invoice: 'printInvoiceBtn',
+                receipt: 'printReceiptBtn',
+                letter: 'printLetterBtn',
+                pal: 'printPalBtn',
+                do: 'printDoBtn'
+            }[type];
+
+            const btn = printBtn ? document.getElementById(printBtn) : null;
+            const originalHtml = btn ? btn.innerHTML : '';
+            // IMPORTANT: create the browser window synchronously while the click
+            // event is still active. After the async Sheets save, re-use this same
+            // window for the document and trigger the browser print preview.
+            // Opening it only after await/fetch can be blocked by popup blockers.
+            let printWin = null;
+
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                }
+
+                printWin = window.open('', '_blank', 'width=794,height=1123,scrollbars=yes');
+                if (!printWin) {
+                    throw new Error('Please allow popups for this site to print.');
+                }
+                printWin.document.open();
+                printWin.document.write('<!DOCTYPE html><html><head><title>Preparing print...</title></head><body style="font-family:Arial,sans-serif;padding:30px;text-align:center;"><h3>Saving document...</h3><p>Please wait.</p></body></html>');
+                printWin.document.close();
+
+                if (!SheetAPI.isConfigured()) {
+                    throw new Error('Google Sheets backend is not configured.');
+                }
+
+                if (!sheetsInitialized) {
+                    const connected = await initializeGoogleSheets();
+                    if (!connected) {
+                        throw new Error('Google Sheets backend is not connected.');
+                    }
+                }
+
+                // saveDocument() ultimately calls the backend-only saveDoc path.
+                const saved = await saveDocument(type, data, title);
+                if (!saved) {
+                    throw new Error('Google Sheets did not confirm the document save.');
+                }
+
+                // Only after a confirmed Google Sheets save do we populate the
+                // already-open print window and call window.print().
+                const printed = printDocument(buildHtml(), title, isPAL, isDO, printWin);
+                if (!printed) throw new Error('Unable to open the print preview.');
+                await addUserLog('PRINT', logDetails || `Printed ${type}`);
+            } catch (error) {
+                console.error(`Auto-save before print failed for ${type}:`, error);
+                if (printWin && !printWin.closed) {
+                    try { printWin.close(); } catch (e) {}
+                }
+                showToast(`❌ Print cancelled: ${error.message}`, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+        }
+
+        document.getElementById('printInvoiceBtn').addEventListener('click', async () => {
+            const data = getInvoiceData();
+            await autoSaveBeforePrint(
+                'invoice',
+                data,
+                `Invoice ${data.number || ''} - ${data.customer || ''}`,
+                buildInvoiceHTML,
+                false,
+                false,
+                `Printed Invoice${data.number ? ' - Invoice No: ' + data.number : ''}`
+            );
         });
-        document.getElementById('printReceiptBtn').addEventListener('click', () => {
-            addUserLog('PRINT', 'Printed Money Receipt (MR)');
-            printDocument(buildReceiptHTML(), 'Money Receipt');
+
+        document.getElementById('printReceiptBtn').addEventListener('click', async () => {
+            const data = getReceiptData();
+            await autoSaveBeforePrint(
+                'receipt',
+                data,
+                `Receipt ${data.number || ''} - ${data.from || ''}`,
+                buildReceiptHTML,
+                false,
+                false,
+                `Printed Money Receipt (MR)${data.number ? ' - MR No: ' + data.number : ''}`
+            );
         });
-        document.getElementById('printLetterBtn').addEventListener('click', () => {
-            addUserLog('PRINT', 'Printed Letter Head');
-            printDocument(buildLetterHTML(), 'Letter Head');
+
+        document.getElementById('printLetterBtn').addEventListener('click', async () => {
+            const data = getLetterData();
+            await autoSaveBeforePrint(
+                'letter',
+                data,
+                `Letter - ${data.company || ''}`,
+                buildLetterHTML,
+                false,
+                false,
+                'Printed Letter Head'
+            );
         });
-        document.getElementById('printPalBtn').addEventListener('click', () => {
+
+        document.getElementById('printPalBtn').addEventListener('click', async () => {
             formatAllCurrencyInputs();
             updateCalculations();
-            addUserLog('PRINT', 'Printed Principal Approval Letter (PAL)');
-            printDocument(buildPALHTML(), 'Principal Approval Letter', true);
+            const data = getPalData();
+            await autoSaveBeforePrint(
+                'pal',
+                data,
+                `PAL - ${data.customer || data.dealer || ''}`,
+                buildPALHTML,
+                true,
+                false,
+                `Printed Principal Approval Letter (PAL)${data.customer ? ' - ' + data.customer : ''}`
+            );
         });
-        document.getElementById('printDoBtn').addEventListener('click', () => {
+
+        document.getElementById('printDoBtn').addEventListener('click', async () => {
             updateDONetPayable();
-            const doData = getDoData();
-            addUserLog('PRINT', 'Printed Delivery Order' + (doData.number ? ' - DO No: ' + doData.number : ''));
-            printDocument(`<div class="do-preview" style="padding:0;border:none;max-width:100%;">${buildDOHTML()}</div>`, 'Delivery Order', false, true);
+            const data = getDoData();
+            await autoSaveBeforePrint(
+                'do',
+                data,
+                `DO ${data.number || ''} - ${data.customer || ''}`,
+                () => `<div class="do-preview" style="padding:0;border:none;max-width:100%;">${buildDOHTML()}</div>`,
+                false,
+                true,
+                `Printed Delivery Order${data.number ? ' - DO No: ' + data.number : ''}`
+            );
         });
 
         // ================================================================
