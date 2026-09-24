@@ -176,7 +176,17 @@
         .connection-status .status-text {
             color: var(--text-secondary);
             font-size: 11px;
+        }        .connection-status .reconnect-btn {
+            border: 0; background: transparent; color: var(--text-secondary);
+            width: 24px; height: 24px; padding: 0; margin-left: 2px;
+            border-radius: 50%; display: inline-flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all .25s ease; flex-shrink: 0;
         }
+        .connection-status .reconnect-btn:hover { color: var(--accent); background: var(--bg-hover, rgba(127,127,127,.12)); }
+        .connection-status .reconnect-btn:disabled { cursor: not-allowed; opacity: .55; }
+        .connection-status .reconnect-btn.reconnecting i { animation: spin-reconnect .8s linear infinite; }
+        @keyframes spin-reconnect { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 
         @keyframes pulse-green {
             0%,
@@ -1690,15 +1700,14 @@
                 <div class="connection-status" id="connectionStatus">
                     <span class="signal off" id="signalIndicator"></span>
                     <span class="status-text" id="connectionStatusText">Connecting...</span>
+                    <button type="button" class="reconnect-btn" id="reconnectServerBtn" title="Reconnect to server" aria-label="Reconnect to server">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                 </div>
             </div>
             <div class="right">
                 <div class="datetime dashboard-datetime" id="dashboardDateTime">
                     <i class="fas fa-calendar-day"></i><span id="dashboardDateTimeText">Loading…</span>
-                </div>
-                <div class="status-badge" id="storageStatus">
-                    <i class="fas fa-server"></i>
-                    <span id="storageStatusText">Server</span>
                 </div>
                 <div class="theme-toggle" id="themeToggle" title="Toggle theme">
                     <i class="fas fa-sun" id="themeIcon"></i>
@@ -2425,6 +2434,8 @@ Management</textarea></div>
         // ================================================================
         //  CONNECTION STATUS INDICATOR
         // ================================================================
+        // Single server-status indicator: the header badge is the only visible
+        // Server Connected location in the application.
         function updateConnectionStatus(status, message) {
             const indicator = document.getElementById('signalIndicator');
             const text = document.getElementById('connectionStatusText');
@@ -2450,6 +2461,38 @@ Management</textarea></div>
                 text.style.color = 'var(--text-muted)';
             }
         }
+
+        async function reconnectToServer() {
+            const btn = document.getElementById('reconnectServerBtn');
+            if (!btn || btn.disabled) return;
+            if (!SheetAPI.isConfigured()) {
+                updateConnectionStatus('red', 'Server Not Configured');
+                showToast('⚠️ Google Apps Script server URL is not configured.', 'error');
+                return;
+            }
+            btn.disabled = true; btn.classList.add('reconnecting');
+            updateConnectionStatus('connecting', 'Reconnecting...');
+            sheetsInitialized = false;
+            try {
+                const connected = await initializeGoogleSheets();
+                if (!connected) {
+                    updateConnectionStatus('red', 'Connection Failed');
+                    showToast('❌ Server connection failed. Please try again.', 'error');
+                } else {
+                    updateConnectionStatus('green', 'Server Connected ✓');
+                    showToast('✅ Server reconnected successfully.', 'success');
+                }
+            } catch (err) {
+                console.error('Reconnect failed:', err);
+                sheetsInitialized = false;
+                updateConnectionStatus('red', 'Connection Failed');
+                showToast('❌ Reconnection failed: ' + (err.message || 'Unknown error'), 'error');
+            } finally {
+                btn.disabled = false; btn.classList.remove('reconnecting');
+            }
+        }
+
+        document.getElementById('reconnectServerBtn')?.addEventListener('click', reconnectToServer);
 
         async function initializeGoogleSheets() {
             if (sheetsInitialized) return true;
@@ -2563,39 +2606,53 @@ Management</textarea></div>
             return users;
         }
 
-        async function saveUsers() {
-            // User/tab permissions must be persisted to Google Sheets.
+        async function saveUsers(usersToSave = users) {
+            // IMPORTANT: save only the records that actually changed.
+            // This prevents an unrelated user with missing cached password data
+            // from blocking a Tab Access update.
             if (!SheetAPI.isConfigured()) {
                 throw new Error('Google Apps Script URL is not configured.');
             }
-
             if (!sheetsInitialized) {
                 const connected = await initializeGoogleSheets();
-                if (!connected) {
-                    throw new Error('Google Sheets backend is unavailable.');
-                }
+                if (!connected) throw new Error('Google Sheets backend is unavailable.');
             }
 
-            for (const user of users) {
+            const list = Array.isArray(usersToSave) ? usersToSave : [usersToSave];
+            for (const user of list) {
+                const id = String(user?.id ?? user?.UserID ?? '').trim();
+                const username = String(user?.username ?? user?.Username ?? '').trim();
+                const role = String(user?.role ?? user?.Role ?? '').trim();
+                const name = String(user?.name ?? user?.Name ?? '').trim();
+
+                if (!id || !username || !role || !name) {
+                    throw new Error(`Cannot save permissions: User ID, username, role and name are required for ${username || 'this user'}.`);
+                }
+
                 const cleanUser = {
                     ...user,
-                    tabs: [...new Set(Array.isArray(user.tabs) ? user.tabs : [])]
+                    id,
+                    username,
+                    role,
+                    name,
+                    email: String(user?.email ?? user?.Email ?? '').trim(),
+                    tabs: [...new Set(Array.isArray(user?.tabs) ? user.tabs : [])],
+                    // Backend Code.gs uses these canonical names internally.
+                    UserID: id,
+                    Username: username,
+                    Role: role,
+                    Name: name
                 };
 
-                const result = await SheetAPI.fetchFromSheetStrict('saveUser', {
-                    user: cleanUser
-                });
-
+                const result = await SheetAPI.fetchFromSheetStrict('saveUser', { user: cleanUser });
                 if (!result || result.success !== true) {
-                    throw new Error(
-                        result?.error || `Failed to save permissions for ${user.username || user.name}.`
-                    );
+                    throw new Error(result?.error || `Failed to save ${username}.`);
                 }
             }
 
-            // Local cache is only updated after the backend confirms the save.
+            // Cache only after Google Sheets confirms the save.
             StorageManager.saveUsersLocal(users);
-            showToast('✅ User permissions saved to Google Sheets.', 'success');
+            showToast(`✅ ${list.length === 1 ? 'User permissions' : 'Users'} saved to Google Sheets.`, 'success');
             return true;
         }
 
@@ -3532,9 +3589,9 @@ Management</textarea></div>
                     return; }
                 if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) { alert(
                         'Username already exists.'); return; }
-                const newUserTabs = role === 'admin' ? ['dashboardPage', 'usersPage', 'gstPage', 'invoicePage',
-                    'receiptPage', 'letterPage', 'palPage', 'doPage', 'dealersPage'
-                ] : ['gstPage', 'invoicePage', 'receiptPage', 'letterPage', 'palPage', 'doPage'];
+                const newUserTabs = role === 'admin'
+                    ? ['dashboardPage', 'usersPage', 'dealersPage']
+                    : [];
                 const newUser = { id: Date.now(), username, password, role, name, email: email || '',
                     tabs: newUserTabs };
                 users.push(newUser);
@@ -3661,7 +3718,7 @@ Management</textarea></div>
                 u.tabs = [...new Set(selected)];
 
                 try {
-                    await saveUsers();
+                    await saveUsers([u]);
 
                     // Re-read permissions from Google Sheets so the UI reflects
                     // the backend value, not an optimistic local value.
