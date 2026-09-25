@@ -4970,6 +4970,20 @@ Management</textarea></div>
         }
 
         // ================================================================
+        //  SAVED DOCUMENT OWNERSHIP / PERMISSIONS
+        // ================================================================
+        function normalizeOwnerValue(value) {
+            return String(value ?? '').trim().toLowerCase();
+        }
+
+        function canManageSavedDoc(doc) {
+            // EDIT and DELETE are ADMIN-ONLY for every saved document.
+            // Normal users may still view/print documents they are allowed to see.
+            if (!currentUser) return false;
+            return String(currentUser.role || '').trim().toLowerCase() === 'admin';
+        }
+
+        // ================================================================
         //  LOAD SAVED DOCUMENTS
         // ================================================================
         async function loadSavedDocs(type) {
@@ -4988,8 +5002,21 @@ Management</textarea></div>
 
             try {
                 let docs = await loadDocs(type);
-                if (currentUser && currentUser.role !== 'admin') {
-                    docs = docs.filter(d => d.createdBy === currentUser.username);
+                // Each normal user sees ONLY documents created by their own account.
+                // Match current and legacy owner fields stored in Google Sheets.
+                if (currentUser && String(currentUser.role || '').trim().toLowerCase() !== 'admin') {
+                    const me = [
+                        currentUser.id, currentUser.username, currentUser.name,
+                        currentUser.UserID, currentUser.Username, currentUser.Name
+                    ].map(normalizeOwnerValue).filter(Boolean);
+                    docs = docs.filter(d => {
+                        const owners = [
+                            d.createdBy, d.createdById, d.originalCreatedBy, d.originalCreatedById,
+                            d.userId, d.userID, d.userName, d.username, d.UserID, d.Username,
+                            d.ownerId, d.ownerID, d.ownerName, d.ownerUsername
+                        ].map(normalizeOwnerValue).filter(Boolean);
+                        return owners.some(owner => me.includes(owner));
+                    });
                 }
                 if (!docs || docs.length === 0) {
                     container.innerHTML =
@@ -5029,11 +5056,7 @@ Management</textarea></div>
                             return '';
                     }
                 };
-                const canEditDoc = (doc) => {
-                    if (!currentUser) return false;
-                    if (currentUser.role === 'admin') return true;
-                    return doc.createdBy === currentUser.username;
-                };
+                const canEditDoc = (doc) => currentUser && String(currentUser.role || '').trim().toLowerCase() === 'admin';
 
                 let html = '';
                 docs.forEach(doc => {
@@ -5043,7 +5066,7 @@ Management</textarea></div>
                     const date = doc.updatedAt || doc.createdAt || '';
                     const dateStr = date ? new Date(date).toLocaleDateString('en-IN', { day: 'numeric',
                         month: 'short', year: 'numeric' }) : '';
-                    const isOwner = currentUser && doc.createdBy === currentUser.username;
+                    const isOwner = currentUser && String(currentUser.role || '').trim().toLowerCase() === 'admin';
                     const canEdit = canEditDoc(doc);
                     const ownerBadge = doc.createdBy ?
                         `<span class="doc-owner">${escapeHtml(doc.createdBy)}${isOwner ? ' (you)' : ''}</span>` :
@@ -5072,8 +5095,9 @@ Management</textarea></div>
                                 ${adminModifiedBadge}
                             </div>
                             <div class="doc-actions">
+                                <button class="btn btn-outline btn-sm" onclick="printSavedDoc('${type}','${doc.id}')" title="Print saved document"><i class="fas fa-print"></i> Print</button>
                                 ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="editSavedDoc('${type}','${doc.id}')"><i class="fas fa-edit"></i> Edit</button>` : ''}
-                                ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="deleteSavedDoc('${type}','${doc.id}')"><i class="fas fa-trash"></i></button>` : ''}
+                                ${canEdit ? `<button class="btn btn-danger btn-sm" onclick="deleteSavedDoc('${type}','${doc.id}')" title="Delete saved document"><i class="fas fa-trash"></i></button>` : ''}
                                 ${!canEdit && currentUser?.role === 'admin' ? `<span style="font-size:11px;color:var(--text-muted);">(owned by ${escapeHtml(doc.createdBy || 'unknown')})</span>` : ''}
                             </div>
                         </div>
@@ -5087,16 +5111,89 @@ Management</textarea></div>
         }
 
         // ================================================================
+        //  PRINT A SAVED DOCUMENT WITHOUT SAVING IT AGAIN
+        // ================================================================
+        window.printSavedDoc = async function(type, id) {
+            let docs = [];
+            try {
+                docs = await loadDocs(type);
+                const doc = docs.find(d => String(d.id) === String(id));
+                if (!doc) {
+                    showToast('Saved document not found.', 'error');
+                    return;
+                }
+
+                const data = doc.data || {};
+                const titleMap = { invoice: 'Invoice', receipt: 'Receipt', letter: 'Letter', pal: 'PAL', do: 'DO' };
+                const title = `${titleMap[type] || type.toUpperCase()} - ${data.number || data.customer || data.company || doc.title || ''}`;
+
+                // Snapshot the current form so printing a saved record does not overwrite
+                // anything the user is currently preparing in the editor.
+                const snapshot = {};
+                document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+                    snapshot[el.id] = { value: el.value, checked: el.checked };
+                });
+
+                try {
+                    switch (type) {
+                        case 'invoice': loadInvoiceData(data); break;
+                        case 'receipt': loadReceiptData(data); break;
+                        case 'letter': loadLetterData(data); break;
+                        case 'pal': loadPalData(data); break;
+                        case 'do': loadDoData(data); break;
+                    }
+
+                    if (type === 'pal') {
+                        formatAllCurrencyInputs();
+                        updateCalculations();
+                    } else if (type === 'do') {
+                        updateDONetPayable();
+                    }
+
+                    let html = '';
+                    let isPAL = false;
+                    let isDO = false;
+                    switch (type) {
+                        case 'invoice': html = buildInvoiceHTML(); break;
+                        case 'receipt': html = buildReceiptHTML(); break;
+                        case 'letter': html = buildLetterHTML(); break;
+                        case 'pal': html = buildPALHTML(); isPAL = true; break;
+                        case 'do': html = buildDOHTML(); isDO = true; break;
+                        default: throw new Error('Unsupported document type.');
+                    }
+
+                    const ok = printDocument(html, title, isPAL, isDO);
+                    if (ok) showToast(`Print preview opened for ${title}.`, 'success');
+                } finally {
+                    Object.entries(snapshot).forEach(([id, state]) => {
+                        const el = document.getElementById(id);
+                        if (!el) return;
+                        el.value = state.value;
+                        if ('checked' in el) el.checked = state.checked;
+                    });
+                    try {
+                        if (type === 'pal') generatePAL();
+                        if (type === 'do') { updateDONetPayable(); generateDO(); }
+                    } catch (_) {}
+                }
+            } catch (err) {
+                console.error('printSavedDoc error:', err);
+                showToast('Failed to print saved document.', 'error');
+            }
+        };
+
+        // ================================================================
         //  EDIT / DELETE SAVED DOCUMENTS
         // ================================================================
         window.editSavedDoc = async function(type, id) {
             try {
-                let docs = await loadDocs(type);
-                if (currentUser && currentUser.role !== 'admin') {
-                    docs = docs.filter(d => d.createdBy === currentUser.username);
+                if (!currentUser || String(currentUser.role || '').trim().toLowerCase() !== 'admin') {
+                    showToast('Only Admin can edit saved documents.', 'error');
+                    return;
                 }
+                const docs = await loadDocs(type);
                 const doc = docs.find(d => d.id == id);
-                if (!doc) { showToast('Document not found or you do not have permission.', 'error'); return; }
+                if (!doc) { showToast('Document not found.', 'error'); return; }
                 const data = doc.data || {};
                 const pageMap = { invoice: 'invoicePage', receipt: 'receiptPage', letter: 'letterPage',
                     pal: 'palPage', do: 'doPage' };
@@ -5147,12 +5244,13 @@ Management</textarea></div>
 
         window.deleteSavedDoc = async function(type, id) {
             try {
-                let docs = await loadDocs(type);
-                if (currentUser && currentUser.role !== 'admin') {
-                    docs = docs.filter(d => d.createdBy === currentUser.username);
+                if (!currentUser || String(currentUser.role || '').trim().toLowerCase() !== 'admin') {
+                    showToast('Only Admin can edit saved documents.', 'error');
+                    return;
                 }
+                const docs = await loadDocs(type);
                 const doc = docs.find(d => d.id == id);
-                if (!doc) { showToast('Document not found or you do not have permission.', 'error'); return; }
+                if (!doc) { showToast('Document not found.', 'error'); return; }
                 if (!confirm(`Delete this ${type}? This action cannot be undone.`)) return;
                 await deleteDocFromStorage(type, id);
                 addUserLog(`${type.toUpperCase()} DELETED`, `Deleted ${doc.title || type}`);
