@@ -277,6 +277,50 @@
         .login-header .brand span {
             color: var(--accent);
         }
+        .login-server-bar {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            margin:0 0 14px 0;
+            width:100%;
+        }
+        .login-server-icon {
+            position:relative;
+            width:46px;
+            height:46px;
+            padding:0;
+            border-radius:50%;
+            border:1px solid var(--border-color);
+            background:var(--bg-card);
+            color:var(--text-secondary);
+            box-shadow:var(--shadow);
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            transition:all .25s ease;
+        }
+        .login-server-icon:hover {
+            color:var(--accent);
+            border-color:var(--accent);
+            transform:translateY(-1px);
+        }
+        .login-server-icon i { font-size:20px; }
+        .login-server-icon.connected { color:var(--signal-green); border-color:var(--signal-green); }
+        .login-server-icon.disconnected { color:var(--signal-red); border-color:var(--signal-red); }
+        .login-server-dot {
+            position:absolute;
+            right:1px;
+            bottom:1px;
+            width:11px;
+            height:11px;
+            border-radius:50%;
+            border:2px solid var(--bg-card);
+        }
+        .login-server-dot.green { background:var(--signal-green); box-shadow:0 0 9px rgba(34,197,94,.55); }
+        .login-server-dot.red { background:var(--signal-red); box-shadow:0 0 9px rgba(239,68,68,.45); }
+        .login-server-dot.off { background:var(--signal-off); }
+
         .login-header .datetime {
             font-size: 13px;
             color: var(--text-muted);
@@ -1669,6 +1713,12 @@
             <div class="brand"><img src="logo.png" alt="KK INFOTECH" class="kk-company-logo" /></div>
             <div class="datetime" id="loginDateTime"><i class="fas fa-calendar-day"></i><span id="loginDateTimeText">Loading…</span></div>
         </div>
+        <div class="login-server-bar">
+            <button type="button" class="login-server-icon" id="loginServerButton" title="Connecting to Server..." aria-label="Server connection status. Click to reconnect">
+                <i class="fas fa-server" id="loginServerIcon"></i>
+                <span class="login-server-dot off" id="loginServerSignal" aria-hidden="true"></span>
+            </button>
+        </div>
         <div class="login-card">
             <div class="brand-icon">
                 <img src="logo.png" alt="KK INFOTECH" class="kk-company-logo" />
@@ -2311,7 +2361,7 @@ Management</textarea></div>
                 }
 
                 if (!result || result.success === false) {
-                    throw new Error(result?.error || 'Google Sheets backend rejected the request.');
+                    throw new Error(result?.error || 'Server backend rejected the request.');
                 }
 
                 return { success: true, ...result };
@@ -2336,7 +2386,7 @@ Management</textarea></div>
                     case 'getUserLogs':
                     case 'saveUserLog':
                     case 'clearUserLogs':
-                        return { success: false, error: 'User logs are backend-only. Google Sheets connection is required.' };
+                        return { success: false, error: 'User logs are backend-only. Server connection is required.' };
                     case 'getUsers':
                         return { success: true, data: StorageManager.getUsersLocal() || [] };
                     case 'getDealers':
@@ -2460,10 +2510,21 @@ Management</textarea></div>
                 text.textContent = message || 'Server Offline';
                 text.style.color = 'var(--text-muted)';
             }
+
+            // Show the same live server state using only one server icon on the login screen.
+            const loginServerSignal = document.getElementById('loginServerSignal');
+            const loginServerButton = document.getElementById('loginServerButton');
+            if (loginServerSignal && loginServerButton) {
+                loginServerSignal.className = 'login-server-dot ' + (status === 'green' ? 'green' : status === 'red' ? 'red' : 'off');
+                loginServerButton.classList.toggle('connected', status === 'green');
+                loginServerButton.classList.toggle('disconnected', status === 'red');
+                loginServerButton.title = text.textContent || 'Server connection status';
+                loginServerButton.setAttribute('aria-label', text.textContent || 'Server connection status. Click to reconnect');
+            }
         }
 
         async function reconnectToServer() {
-            const btn = document.getElementById('reconnectServerBtn');
+            const btn = document.getElementById('reconnectServerBtn') || document.getElementById('loginServerButton');
             if (!btn || btn.disabled) return;
             if (!SheetAPI.isConfigured()) {
                 updateConnectionStatus('red', 'Server Not Configured');
@@ -2493,12 +2554,13 @@ Management</textarea></div>
         }
 
         document.getElementById('reconnectServerBtn')?.addEventListener('click', reconnectToServer);
+        document.getElementById('loginServerButton')?.addEventListener('click', reconnectToServer);
 
         async function initializeGoogleSheets() {
             if (sheetsInitialized) return true;
 
             if (!SheetAPI.isConfigured()) {
-                console.log('Google Sheets not configured. Using local storage.');
+                console.log('Server not configured. Using local storage.');
                 updateConnectionStatus('red', 'Server Not Configured');
                 return false;
             }
@@ -2509,7 +2571,7 @@ Management</textarea></div>
                 // Test connection first
                 const testResult = await SheetAPI.fetchFromSheet('testConnection');
                 if (!testResult.success) {
-                    console.warn('Cannot connect to Google Sheets API.');
+                    console.warn('Cannot connect to Server API.');
                     updateConnectionStatus('red', 'Connection Failed');
                     return false;
                 }
@@ -2526,17 +2588,17 @@ Management</textarea></div>
 
                 sheetsInitialized = allInitialized;
                 if (allInitialized) {
-                    console.log('Google Sheets initialized successfully');
+                    console.log('Server initialized successfully');
                     updateConnectionStatus('green', 'Server Connected ✓');
                     showToast('✅ Server connected and initialized!', 'success');
                 } else {
-                    console.warn('Google Sheets initialization partially failed.');
+                    console.warn('Server initialization partially failed.');
                     updateConnectionStatus('red', 'Partial Connection');
                     showToast('⚠️ Some sheets failed to initialize. Check console.', 'error');
                 }
                 return allInitialized;
             } catch (error) {
-                console.error('Error initializing Google Sheets:', error);
+                console.error('Error initializing Server:', error);
                 updateConnectionStatus('red', 'Connection Error');
                 return false;
             }
@@ -2572,7 +2634,7 @@ Management</textarea></div>
                 } else {
                     users = JSON.parse(JSON.stringify(DEFAULT_USERS));
                     StorageManager.saveUsersLocal(users);
-                    // Try to sync to Google Sheets
+                    // Try to sync to Server
                     if (SheetAPI.isConfigured()) {
                         for (const user of users) {
                             await SheetAPI.fetchFromSheet('saveUser', { user });
@@ -2584,7 +2646,7 @@ Management</textarea></div>
                 }
             }
 
-            // IMPORTANT: Google Sheets is the source of truth for tab permissions.
+            // IMPORTANT: Server is the source of truth for tab permissions.
             // Never automatically grant normal users the core tabs.
             users.forEach(u => {
                 let tabs = Array.isArray(u.tabs) ? [...u.tabs] : [];
@@ -2595,7 +2657,7 @@ Management</textarea></div>
                     if (!tabs.includes('usersPage')) tabs.push('usersPage');
                     if (!tabs.includes('dealersPage')) tabs.push('dealersPage');
                 } else {
-                    // Normal users only get exactly what is stored in Google Sheets.
+                    // Normal users only get exactly what is stored in Server.
                     tabs = tabs.filter(t =>
                         !['dashboardPage', 'usersPage', 'dealersPage'].includes(t)
                     );
@@ -2615,7 +2677,7 @@ Management</textarea></div>
             }
             if (!sheetsInitialized) {
                 const connected = await initializeGoogleSheets();
-                if (!connected) throw new Error('Google Sheets backend is unavailable.');
+                if (!connected) throw new Error('Server backend is unavailable.');
             }
 
             const list = Array.isArray(usersToSave) ? usersToSave : [usersToSave];
@@ -2650,9 +2712,9 @@ Management</textarea></div>
                 }
             }
 
-            // Cache only after Google Sheets confirms the save.
+            // Cache only after Server confirms the save.
             StorageManager.saveUsersLocal(users);
-            showToast(`✅ ${list.length === 1 ? 'User permissions' : 'Users'} saved to Google Sheets.`, 'success');
+            showToast(`✅ ${list.length === 1 ? 'User permissions' : 'Users'} saved to Server.`, 'success');
             return true;
         }
 
@@ -2699,17 +2761,17 @@ Management</textarea></div>
         }
 
         async function loadDocs(type) {
-            // Business documents are Google Sheets only. Never read document data
+            // Business documents are Server only. Never read document data
             // from localStorage when the backend is unavailable.
             if (!SheetAPI.isConfigured()) {
-                showToast('⚠️ Google Sheets backend is not configured. Document data is unavailable.', 'error');
+                showToast('⚠️ Server backend is not configured. Document data is unavailable.', 'error');
                 return [];
             }
 
             if (!sheetsInitialized) {
                 const connected = await initializeGoogleSheets();
                 if (!connected) {
-                    showToast('⚠️ Google Sheets backend is not connected. Document was not loaded.', 'error');
+                    showToast('⚠️ Server backend is not connected. Document was not loaded.', 'error');
                     return [];
                 }
             }
@@ -2717,7 +2779,7 @@ Management</textarea></div>
             try {
                 const result = await SheetAPI.fetchFromSheetStrict('getDocs', { type });
                 if (!result || result.success !== true) {
-                    throw new Error(result?.error || 'Unable to load documents from Google Sheets.');
+                    throw new Error(result?.error || 'Unable to load documents from Server.');
                 }
 
                 // Remove any legacy local document cache so document data is not
@@ -2727,23 +2789,23 @@ Management</textarea></div>
             } catch (error) {
                 console.error(`Backend-only getDocs failed for ${type}:`, error);
                 updateConnectionStatus('red', 'Server Disconnected');
-                showToast(`❌ ${type} could not be loaded from Google Sheets.`, 'error');
+                showToast(`❌ ${type} could not be loaded from Server.`, 'error');
                 return [];
             }
         }
 
         async function saveDocToStorage(type, doc) {
             // IMPORTANT: despite the legacy function name, documents are NOT
-            // stored in localStorage. They are written directly to Google Sheets.
+            // stored in localStorage. They are written directly to Server.
             if (!SheetAPI.isConfigured()) {
-                showToast('❌ Google Sheets backend is not configured. Nothing was saved.', 'error');
+                showToast('❌ Server backend is not configured. Nothing was saved.', 'error');
                 return null;
             }
 
             if (!sheetsInitialized) {
                 const connected = await initializeGoogleSheets();
                 if (!connected) {
-                    showToast('❌ Google Sheets backend is unavailable. Nothing was saved.', 'error');
+                    showToast('❌ Server backend is unavailable. Nothing was saved.', 'error');
                     return null;
                 }
             }
@@ -2751,32 +2813,32 @@ Management</textarea></div>
             try {
                 const result = await SheetAPI.fetchFromSheetStrict('saveDoc', { doc });
                 if (!result || result.success !== true) {
-                    throw new Error(result?.error || 'Google Sheets did not confirm the save.');
+                    throw new Error(result?.error || 'Server did not confirm the save.');
                 }
 
                 // Explicitly remove any old browser-side document cache.
                 StorageManager.removeDocumentsLocal(type);
                 updateConnectionStatus('green', 'Server Connected ✓');
-                showToast(`✅ ${type.toUpperCase()} saved to Google Sheets.`, 'success');
+                showToast(`✅ ${type.toUpperCase()} saved to Server.`, 'success');
                 return doc;
             } catch (error) {
                 console.error(`Backend-only saveDoc failed for ${type}:`, error);
                 updateConnectionStatus('red', 'Server Disconnected');
-                showToast(`❌ ${type.toUpperCase()} was NOT saved. Google Sheets backend error.`, 'error');
+                showToast(`❌ ${type.toUpperCase()} was NOT saved. Server backend error.`, 'error');
                 return null;
             }
         }
 
         async function deleteDocFromStorage(type, id) {
             if (!SheetAPI.isConfigured()) {
-                showToast('❌ Google Sheets backend is not configured. Nothing was deleted.', 'error');
+                showToast('❌ Server backend is not configured. Nothing was deleted.', 'error');
                 return false;
             }
 
             if (!sheetsInitialized) {
                 const connected = await initializeGoogleSheets();
                 if (!connected) {
-                    showToast('❌ Google Sheets backend is unavailable. Nothing was deleted.', 'error');
+                    showToast('❌ Server backend is unavailable. Nothing was deleted.', 'error');
                     return false;
                 }
             }
@@ -2784,13 +2846,13 @@ Management</textarea></div>
             try {
                 const result = await SheetAPI.fetchFromSheetStrict('deleteDoc', { type, id });
                 if (!result || result.success !== true) {
-                    throw new Error(result?.error || 'Google Sheets did not confirm the delete.');
+                    throw new Error(result?.error || 'Server did not confirm the delete.');
                 }
                 StorageManager.removeDocumentsLocal(type);
                 return true;
             } catch (error) {
                 console.error(`Backend-only deleteDoc failed for ${type}:`, error);
-                showToast(`❌ ${type.toUpperCase()} was not deleted from Google Sheets.`, 'error');
+                showToast(`❌ ${type.toUpperCase()} was not deleted from Server.`, 'error');
                 return false;
             }
         }
@@ -3151,7 +3213,7 @@ Management</textarea></div>
         async function fetchBackendUserLogs() {
             const result = await SheetAPI.fetchFromSheet('getUserLogs', {});
             if (!result || result.success === false) {
-                throw new Error(result?.error || 'Unable to load user logs from Google Sheets.');
+                throw new Error(result?.error || 'Unable to load user logs from Server.');
             }
             backendUserLogs = Array.isArray(result.data) ? result.data.map(normalizeBackendLog) : [];
             return backendUserLogs;
@@ -3162,7 +3224,7 @@ Management</textarea></div>
             const body = document.getElementById('userLogsTableBody');
             if (!body) return;
 
-            body.innerHTML = '<tr><td colspan="5" class="text-center">Loading user logs from Google Sheets...</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" class="text-center">Loading user logs from Server...</td></tr>';
             try {
                 let logs = await fetchBackendUserLogs();
                 const userF = (document.getElementById('logUserFilter')?.value || '').toLowerCase().trim();
@@ -3190,16 +3252,16 @@ Management</textarea></div>
                         <td><span class="badge">${escapeHtml(l.action)}</span></td>
                         <td>${escapeHtml(l.details)}</td>
                     </tr>`;
-                }).join('') : '<tr><td colspan="5" class="text-center">No user logs found in Google Sheets.</td></tr>';
+                }).join('') : '<tr><td colspan="5" class="text-center">No user logs found in Server.</td></tr>';
             } catch (error) {
                 console.error(error);
                 body.innerHTML = `<tr><td colspan="5" class="text-center">Unable to load backend logs: ${escapeHtml(error.message || 'Unknown error')}</td></tr>`;
-                showToast('User logs could not be loaded from Google Sheets.', 'error');
+                showToast('User logs could not be loaded from Server.', 'error');
             }
         }
 
         async function clearUserLogs() {
-            if (currentUser?.role !== 'admin' || !confirm('Clear all user logs from Google Sheets?')) return;
+            if (currentUser?.role !== 'admin' || !confirm('Clear all user logs from Server?')) return;
             const result = await SheetAPI.fetchFromSheet('clearUserLogs', {});
             if (!result || result.success === false) {
                 showToast(result?.error || 'Unable to clear backend logs.', 'error');
@@ -3207,7 +3269,7 @@ Management</textarea></div>
             }
             backendUserLogs = [];
             await renderUserLogs();
-            showToast('All user logs cleared from Google Sheets.', 'success');
+            showToast('All user logs cleared from Server.', 'success');
         }
 
         async function exportUserLogs() {
@@ -3720,7 +3782,7 @@ Management</textarea></div>
                 try {
                     await saveUsers([u]);
 
-                    // Re-read permissions from Google Sheets so the UI reflects
+                    // Re-read permissions from Server so the UI reflects
                     // the backend value, not an optimistic local value.
                     await loadUsers();
 
@@ -3730,7 +3792,7 @@ Management</textarea></div>
                     );
 
                     if (!freshUser) {
-                        throw new Error('Updated user could not be reloaded from Google Sheets.');
+                        throw new Error('Updated user could not be reloaded from Server.');
                     }
 
                     if (currentUser && (
@@ -4602,7 +4664,7 @@ Management</textarea></div>
         function printDocument(html, title, isPAL = false, isDO = false, existingWindow = null) {
             // Open the print window from the original user click whenever possible.
             // This prevents mobile/Chrome popup blockers from cancelling the print
-            // window after the asynchronous Google Sheets save completes.
+            // window after the asynchronous Server save completes.
             const win = existingWindow || window.open('', '_blank', 'width=794,height=1123,scrollbars=yes');
             if (!win) { alert('Please allow popups for this site to print.'); return false; }
             let extraStyles = '';
@@ -4690,7 +4752,7 @@ Management</textarea></div>
         // ================================================================
         //  PRINT EVENT HANDLERS
         //  Every Print button FIRST saves the current document directly to
-        //  Google Sheets. Printing is cancelled if the backend save fails.
+        //  Server. Printing is cancelled if the backend save fails.
         //  No business document is written to localStorage.
         // ================================================================
         async function autoSaveBeforePrint(type, data, title, buildHtml, isPAL = false, isDO = false, logDetails = '') {
@@ -4725,23 +4787,23 @@ Management</textarea></div>
                 printWin.document.close();
 
                 if (!SheetAPI.isConfigured()) {
-                    throw new Error('Google Sheets backend is not configured.');
+                    throw new Error('Server backend is not configured.');
                 }
 
                 if (!sheetsInitialized) {
                     const connected = await initializeGoogleSheets();
                     if (!connected) {
-                        throw new Error('Google Sheets backend is not connected.');
+                        throw new Error('Server backend is not connected.');
                     }
                 }
 
                 // saveDocument() ultimately calls the backend-only saveDoc path.
                 const saved = await saveDocument(type, data, title);
                 if (!saved) {
-                    throw new Error('Google Sheets did not confirm the document save.');
+                    throw new Error('Server did not confirm the document save.');
                 }
 
-                // Only after a confirmed Google Sheets save do we populate the
+                // Only after a confirmed Server save do we populate the
                 // already-open print window and call window.print().
                 const printed = printDocument(buildHtml(), title, isPAL, isDO, printWin);
                 if (!printed) throw new Error('Unable to open the print preview.');
@@ -5003,7 +5065,7 @@ Management</textarea></div>
             try {
                 let docs = await loadDocs(type);
                 // Each normal user sees ONLY documents created by their own account.
-                // Match current and legacy owner fields stored in Google Sheets.
+                // Match current and legacy owner fields stored in Server.
                 if (currentUser && String(currentUser.role || '').trim().toLowerCase() !== 'admin') {
                     const me = [
                         currentUser.id, currentUser.username, currentUser.name,
