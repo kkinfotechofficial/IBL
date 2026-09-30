@@ -2481,6 +2481,17 @@ Management</textarea></div>
         let stampDataURL = DEFAULT_STAMP_URL;
         let sheetsInitialized = false;
 
+// Fast server connection manager.
+// A lightweight health check is performed first; full sheet initialization is deferred
+// until after successful login so the login screen becomes ready much faster.
+let serverConnected = false;
+let serverConnecting = false;
+let serverRetryTimer = null;
+let serverRetryCount = 0;
+const SERVER_MAX_AUTO_RETRIES = 6;
+const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
+
+
         // ================================================================
         //  CONNECTION STATUS INDICATOR
         // ================================================================
@@ -2523,33 +2534,188 @@ Management</textarea></div>
             }
         }
 
+        // ================================================================
+        //  FAST SERVER CONNECTION + AUTOMATIC RECONNECT
+        // ================================================================
+        async function testServerConnectionFast(timeoutMs = 6500) {
+            if (!SheetAPI.isConfigured()) {
+                serverConnected = false;
+                updateConnectionStatus('red', 'Server Not Configured');
+                return false;
+            }
+
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+            try {
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'testConnection', payload: {} }),
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+
+                const text = await response.text();
+                let result = null;
+                try { result = JSON.parse(text); } catch (_) {}
+
+                if (!response.ok || !result || result.success === false) {
+                    throw new Error((result && result.error) || ('HTTP ' + response.status));
+                }
+
+                serverConnected = true;
+                serverRetryCount = 0;
+                updateConnectionStatus('green', 'Server Connected ✓');
+                return true;
+            } catch (err) {
+                serverConnected = false;
+                console.warn('Fast server check failed:', err && err.message ? err.message : err);
+                return false;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function connectToServerWithRetry(options = {}) {
+            const silent = options.silent !== false;
+            const maxRetries = Number.isInteger(options.maxRetries)
+                ? options.maxRetries
+                : SERVER_MAX_AUTO_RETRIES;
+
+            if (serverConnecting) return serverConnected;
+            if (!SheetAPI.isConfigured()) {
+                updateConnectionStatus('red', 'Server Not Configured');
+                return false;
+            }
+
+            serverConnecting = true;
+            if (!silent) updateConnectionStatus('connecting', 'Connecting to Server...');
+
+            try {
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                    serverRetryCount = attempt;
+
+                    if (attempt > 0) {
+                        const delay = SERVER_RETRY_DELAYS[Math.min(attempt, SERVER_RETRY_DELAYS.length - 1)];
+                        updateConnectionStatus('connecting', 'Reconnecting... (' + attempt + ')');
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+
+                    if (await testServerConnectionFast()) {
+                        if (!silent && attempt > 0) {
+                            showToast('✅ Server reconnected successfully.', 'success');
+                        }
+                        return true;
+                    }
+                }
+
+                updateConnectionStatus('red', 'Connection Failed — Retrying');
+                scheduleBackgroundReconnect();
+                return false;
+            } finally {
+                serverConnecting = false;
+            }
+        }
+
+        function scheduleBackgroundReconnect() {
+            if (serverRetryTimer || !SheetAPI.isConfigured()) return;
+
+            serverRetryTimer = setTimeout(async () => {
+                serverRetryTimer = null;
+                const ok = await connectToServerWithRetry({ silent: true, maxRetries: 2 });
+                if (!ok) scheduleBackgroundReconnect();
+            }, 5000);
+        }
+
+        async function ensureServerBeforeLogin() {
+            if (serverConnected) return true;
+
+            updateConnectionStatus('connecting', 'Connecting to Server...');
+            const connected = await connectToServerWithRetry({
+                silent: true,
+                maxRetries: SERVER_MAX_AUTO_RETRIES
+            });
+
+            if (!connected) {
+                updateConnectionStatus('red', 'Server Unavailable — Retrying');
+                scheduleBackgroundReconnect();
+            }
+            return connected;
+        }
+
+        // Start the lightweight connection check immediately when the page opens.
+        // Do not initialize every Google Sheet here; that is done after authentication.
+        function startServerConnectionMonitor() {
+            if (!SheetAPI.isConfigured()) {
+                updateConnectionStatus('red', 'Server Not Configured');
+                return;
+            }
+
+            updateConnectionStatus('connecting', 'Connecting to Server...');
+            connectToServerWithRetry({ silent: true, maxRetries: SERVER_MAX_AUTO_RETRIES })
+                .then(ok => {
+                    if (!ok) scheduleBackgroundReconnect();
+                })
+                .catch(() => scheduleBackgroundReconnect());
+
+            // Keep the status healthy while the page remains open.
+            setInterval(() => {
+                if (!document.hidden && !serverConnecting) {
+                    testServerConnectionFast().then(ok => {
+                        if (!ok) scheduleBackgroundReconnect();
+                    }).catch(() => scheduleBackgroundReconnect());
+                }
+            }, 30000);
+        }
+
         async function reconnectToServer() {
             const btn = document.getElementById('reconnectServerBtn') || document.getElementById('loginServerButton');
             if (!btn || btn.disabled) return;
+
             if (!SheetAPI.isConfigured()) {
                 updateConnectionStatus('red', 'Server Not Configured');
                 showToast('⚠️ Google Apps Script server URL is not configured.', 'error');
                 return;
             }
-            btn.disabled = true; btn.classList.add('reconnecting');
-            updateConnectionStatus('connecting', 'Reconnecting...');
+
+            btn.disabled = true;
+            btn.classList.add('reconnecting');
             sheetsInitialized = false;
+            updateConnectionStatus('connecting', 'Reconnecting...');
+
             try {
-                const connected = await initializeGoogleSheets();
+                const connected = await connectToServerWithRetry({
+                    silent: false,
+                    maxRetries: SERVER_MAX_AUTO_RETRIES
+                });
+
                 if (!connected) {
-                    updateConnectionStatus('red', 'Connection Failed');
-                    showToast('❌ Server connection failed. Please try again.', 'error');
+                    updateConnectionStatus('red', 'Server Unavailable — Retrying');
+                    showToast('⚠️ Server is temporarily unavailable. Automatic reconnection is continuing.', 'error');
+                    return;
+                }
+
+                // Full sheet initialization happens only after the lightweight
+                // connection succeeds, preventing the login screen from waiting
+                // for multiple sheet requests.
+                const initialized = await initializeGoogleSheets();
+                if (!initialized) {
+                    updateConnectionStatus('red', 'Server Connected — Initializing');
+                    scheduleBackgroundReconnect();
                 } else {
                     updateConnectionStatus('green', 'Server Connected ✓');
-                    showToast('✅ Server reconnected successfully.', 'success');
                 }
             } catch (err) {
                 console.error('Reconnect failed:', err);
+                serverConnected = false;
                 sheetsInitialized = false;
-                updateConnectionStatus('red', 'Connection Failed');
-                showToast('❌ Reconnection failed: ' + (err.message || 'Unknown error'), 'error');
+                updateConnectionStatus('red', 'Server Unavailable — Retrying');
+                scheduleBackgroundReconnect();
             } finally {
-                btn.disabled = false; btn.classList.remove('reconnecting');
+                btn.disabled = false;
+                btn.classList.remove('reconnecting');
             }
         }
 
@@ -2560,21 +2726,19 @@ Management</textarea></div>
             if (sheetsInitialized) return true;
 
             if (!SheetAPI.isConfigured()) {
-                console.log('Server not configured. Using local storage.');
                 updateConnectionStatus('red', 'Server Not Configured');
                 return false;
             }
 
-            updateConnectionStatus('connecting', 'Connecting to Server...');
+            // The lightweight connection monitor already verified the server.
+            // If not, verify once with a strict real server request.
+            if (!serverConnected) {
+                const connected = await connectToServerWithRetry({ silent: true, maxRetries: 2 });
+                if (!connected) return false;
+            }
 
+            updateConnectionStatus('connecting', 'Loading server data...');
             try {
-                // Test connection first
-                const testResult = await SheetAPI.fetchFromSheet('testConnection');
-                if (!testResult.success) {
-                    console.warn('Cannot connect to Server API.');
-                    updateConnectionStatus('red', 'Connection Failed');
-                    return false;
-                }
 
                 // Initialize all sheets in parallel instead of seven sequential HTTP calls.
                 const sheetTypes = ['Users', 'Dealers', 'Invoices', 'Receipts', 'Letters', 'PALs', 'DOs'];
@@ -2593,13 +2757,17 @@ Management</textarea></div>
                     showToast('✅ Server connected and initialized!', 'success');
                 } else {
                     console.warn('Server initialization partially failed.');
-                    updateConnectionStatus('red', 'Partial Connection');
-                    showToast('⚠️ Some sheets failed to initialize. Check console.', 'error');
+                    sheetsInitialized = false;
+                    updateConnectionStatus('red', 'Server Connected — Initializing');
+                    scheduleBackgroundReconnect();
                 }
                 return allInitialized;
             } catch (error) {
                 console.error('Error initializing Server:', error);
-                updateConnectionStatus('red', 'Connection Error');
+                sheetsInitialized = false;
+                serverConnected = false;
+                updateConnectionStatus('red', 'Server Unavailable — Retrying');
+                scheduleBackgroundReconnect();
                 return false;
             }
         }
@@ -3429,6 +3597,8 @@ Management</textarea></div>
         }
 
         document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+        // Begin server connection immediately when the site opens.
+        startServerConnectionMonitor();
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') attemptLogin();
         });
