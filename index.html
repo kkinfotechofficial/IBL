@@ -787,6 +787,19 @@
             box-shadow: 0 4px 14px rgba(26, 75, 140, 0.25);
         }
 
+        /* ===== RESET BUTTON ===== */
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--btn-danger);
+            color: var(--btn-danger);
+        }
+        .btn-reset:hover {
+            background: var(--btn-danger);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(179, 60, 60, 0.25);
+        }
+
         .table-wrap {
             overflow-x: auto;
         }
@@ -1873,7 +1886,10 @@
                     <p class="section-desc">Calculate GST from ex-showroom price with variable rate.</p>
                     <div class="card">
                         <div class="gst-row"><div class="form-group"><label>Ex-Showroom Price (₹)</label><input type="number" id="exShowroomPrice" value="100000" step="100" /></div><div class="form-group"><label>GST Rate (%)</label><input type="number" id="gstRate" value="18" step="0.5" min="0" max="100" /></div></div>
-                        <button class="btn btn-primary" id="calcGstBtn"><i class="fas fa-sync"></i> Calculate</button>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" id="calcGstBtn"><i class="fas fa-sync"></i> Calculate</button>
+                            <button class="btn btn-reset" id="resetGstBtn"><i class="fas fa-undo"></i> Reset</button>
+                        </div>
                         <div class="gst-result"><div class="stat"><div class="label">Basic Price</div><div class="value" id="gstBasic">₹ 84,746</div></div><div class="stat"><div class="label">GST Amount</div><div class="value gst-amount" id="gstAmount">₹ 15,254</div></div><div class="stat"><div class="label">Total (On-Road)</div><div class="value total" id="gstTotal">₹ 1,00,000</div></div></div>
                     </div>
                 </div>
@@ -1912,6 +1928,7 @@
                             <button class="btn btn-success" id="saveInvoiceBtn"><i class="fas fa-save"></i> Save</button>
                             <button class="btn btn-primary" id="generateInvoiceBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printInvoiceBtn"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-reset" id="resetInvoiceBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="preview-box invoice-preview" id="invoicePreview"><strong>Invoice Preview</strong><br />Add items and click Preview.</div>
                     </div>
@@ -1956,6 +1973,7 @@
                             <button class="btn btn-success" id="saveReceiptBtn"><i class="fas fa-save"></i> Save</button>
                             <button class="btn btn-primary" id="generateReceiptBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printReceiptBtn"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-reset" id="resetReceiptBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="receipt-preview" id="receiptPreview"><div class="receipt-company">KK INFOTECH Solutions Pvt. Ltd.</div><div class="receipt-address">123 Business Park, Mumbai - 400001, India</div><div class="receipt-title">MONEY RECEIPT</div><div style="margin:12px 0;"><div class="receipt-row"><span>Receipt #</span><span>RCP-2026-001</span></div><div class="receipt-row"><span>Date</span><span>22-Jul-2026</span></div><div class="receipt-row"><span>Received From</span><span>Mr. Suresh Patel</span></div><div class="receipt-row"><span>Payment Mode</span><span>Bank Transfer</span></div><div class="receipt-row total"><span>Amount</span><span>₹ 25,000</span></div></div><div class="receipt-sign"><div><span>Receiver's Signature</span><div class="sign-line" style="width:140px;margin-top:4px;"></div></div><div><span>Authorized Signatory</span><div class="sign-line" style="width:140px;margin-top:4px;">Mr. Rajesh Kumar</div></div></div><div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border-color);padding-top:10px;">This is a computer-generated receipt.</div></div>
                     </div>
@@ -1985,6 +2003,7 @@ Management</textarea></div>
                             <button class="btn btn-success" id="saveLetterBtn"><i class="fas fa-save"></i> Save</button>
                             <button class="btn btn-primary" id="generateLetterBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printLetterBtn"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-reset" id="resetLetterBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="letter-head-preview" id="letterPreview"><div class="lh-company">KK INFOTECH Solutions Pvt. Ltd.</div><div class="lh-address">123 Business Park, Mumbai - 400001, India</div><div class="lh-line"></div><div class="lh-body">Fill in the details and click Preview.</div><div style="margin-top:24px;border-top:1px solid var(--border-color);padding-top:12px;display:flex;justify-content:flex-end;font-size:14px;"><div><span>Authorized Signatory</span><div style="border-top:1px solid var(--text-primary);width:160px;margin-top:4px;text-align:center;">Mr. Rajesh Kumar</div></div></div></div>
                     </div>
@@ -2032,6 +2051,7 @@ Management</textarea></div>
                             <button class="btn btn-success" id="savePalBtn"><i class="fas fa-save"></i> Save</button>
                             <button class="btn btn-primary" id="generatePalBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printPalBtn"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-reset" id="resetPalBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="pal-preview" id="palPreview"><div style="text-align:center;padding:30px 0;color:var(--text-muted);">Fill in the details and click Preview.</div></div>
                     </div>
@@ -2105,6 +2125,7 @@ Management</textarea></div>
                             <button class="btn btn-success" id="saveDoBtn"><i class="fas fa-save"></i> Save</button>
                             <button class="btn btn-primary" id="generateDoBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printDoBtn"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-reset" id="resetDoBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="do-preview" id="doPreview"><div style="text-align:center;padding:30px 0;color:var(--text-muted);">Fill in the details and click Preview.</div></div>
                     </div>
@@ -2481,17 +2502,6 @@ Management</textarea></div>
         let stampDataURL = DEFAULT_STAMP_URL;
         let sheetsInitialized = false;
 
-// Fast server connection manager.
-// A lightweight health check is performed first; full sheet initialization is deferred
-// until after successful login so the login screen becomes ready much faster.
-let serverConnected = false;
-let serverConnecting = false;
-let serverRetryTimer = null;
-let serverRetryCount = 0;
-const SERVER_MAX_AUTO_RETRIES = 6;
-const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
-
-
         // ================================================================
         //  CONNECTION STATUS INDICATOR
         // ================================================================
@@ -2534,188 +2544,33 @@ const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
             }
         }
 
-        // ================================================================
-        //  FAST SERVER CONNECTION + AUTOMATIC RECONNECT
-        // ================================================================
-        async function testServerConnectionFast(timeoutMs = 6500) {
-            if (!SheetAPI.isConfigured()) {
-                serverConnected = false;
-                updateConnectionStatus('red', 'Server Not Configured');
-                return false;
-            }
-
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-            try {
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'testConnection', payload: {} }),
-                    signal: controller.signal,
-                    cache: 'no-store'
-                });
-
-                const text = await response.text();
-                let result = null;
-                try { result = JSON.parse(text); } catch (_) {}
-
-                if (!response.ok || !result || result.success === false) {
-                    throw new Error((result && result.error) || ('HTTP ' + response.status));
-                }
-
-                serverConnected = true;
-                serverRetryCount = 0;
-                updateConnectionStatus('green', 'Server Connected ✓');
-                return true;
-            } catch (err) {
-                serverConnected = false;
-                console.warn('Fast server check failed:', err && err.message ? err.message : err);
-                return false;
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-
-        async function connectToServerWithRetry(options = {}) {
-            const silent = options.silent !== false;
-            const maxRetries = Number.isInteger(options.maxRetries)
-                ? options.maxRetries
-                : SERVER_MAX_AUTO_RETRIES;
-
-            if (serverConnecting) return serverConnected;
-            if (!SheetAPI.isConfigured()) {
-                updateConnectionStatus('red', 'Server Not Configured');
-                return false;
-            }
-
-            serverConnecting = true;
-            if (!silent) updateConnectionStatus('connecting', 'Connecting to Server...');
-
-            try {
-                for (let attempt = 0; attempt <= maxRetries; attempt++) {
-                    serverRetryCount = attempt;
-
-                    if (attempt > 0) {
-                        const delay = SERVER_RETRY_DELAYS[Math.min(attempt, SERVER_RETRY_DELAYS.length - 1)];
-                        updateConnectionStatus('connecting', 'Reconnecting... (' + attempt + ')');
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    }
-
-                    if (await testServerConnectionFast()) {
-                        if (!silent && attempt > 0) {
-                            showToast('✅ Server reconnected successfully.', 'success');
-                        }
-                        return true;
-                    }
-                }
-
-                updateConnectionStatus('red', 'Connection Failed — Retrying');
-                scheduleBackgroundReconnect();
-                return false;
-            } finally {
-                serverConnecting = false;
-            }
-        }
-
-        function scheduleBackgroundReconnect() {
-            if (serverRetryTimer || !SheetAPI.isConfigured()) return;
-
-            serverRetryTimer = setTimeout(async () => {
-                serverRetryTimer = null;
-                const ok = await connectToServerWithRetry({ silent: true, maxRetries: 2 });
-                if (!ok) scheduleBackgroundReconnect();
-            }, 5000);
-        }
-
-        async function ensureServerBeforeLogin() {
-            if (serverConnected) return true;
-
-            updateConnectionStatus('connecting', 'Connecting to Server...');
-            const connected = await connectToServerWithRetry({
-                silent: true,
-                maxRetries: SERVER_MAX_AUTO_RETRIES
-            });
-
-            if (!connected) {
-                updateConnectionStatus('red', 'Server Unavailable — Retrying');
-                scheduleBackgroundReconnect();
-            }
-            return connected;
-        }
-
-        // Start the lightweight connection check immediately when the page opens.
-        // Do not initialize every Google Sheet here; that is done after authentication.
-        function startServerConnectionMonitor() {
-            if (!SheetAPI.isConfigured()) {
-                updateConnectionStatus('red', 'Server Not Configured');
-                return;
-            }
-
-            updateConnectionStatus('connecting', 'Connecting to Server...');
-            connectToServerWithRetry({ silent: true, maxRetries: SERVER_MAX_AUTO_RETRIES })
-                .then(ok => {
-                    if (!ok) scheduleBackgroundReconnect();
-                })
-                .catch(() => scheduleBackgroundReconnect());
-
-            // Keep the status healthy while the page remains open.
-            setInterval(() => {
-                if (!document.hidden && !serverConnecting) {
-                    testServerConnectionFast().then(ok => {
-                        if (!ok) scheduleBackgroundReconnect();
-                    }).catch(() => scheduleBackgroundReconnect());
-                }
-            }, 30000);
-        }
-
         async function reconnectToServer() {
             const btn = document.getElementById('reconnectServerBtn') || document.getElementById('loginServerButton');
             if (!btn || btn.disabled) return;
-
             if (!SheetAPI.isConfigured()) {
                 updateConnectionStatus('red', 'Server Not Configured');
                 showToast('⚠️ Google Apps Script server URL is not configured.', 'error');
                 return;
             }
-
-            btn.disabled = true;
-            btn.classList.add('reconnecting');
-            sheetsInitialized = false;
+            btn.disabled = true; btn.classList.add('reconnecting');
             updateConnectionStatus('connecting', 'Reconnecting...');
-
+            sheetsInitialized = false;
             try {
-                const connected = await connectToServerWithRetry({
-                    silent: false,
-                    maxRetries: SERVER_MAX_AUTO_RETRIES
-                });
-
+                const connected = await initializeGoogleSheets();
                 if (!connected) {
-                    updateConnectionStatus('red', 'Server Unavailable — Retrying');
-                    showToast('⚠️ Server is temporarily unavailable. Automatic reconnection is continuing.', 'error');
-                    return;
-                }
-
-                // Full sheet initialization happens only after the lightweight
-                // connection succeeds, preventing the login screen from waiting
-                // for multiple sheet requests.
-                const initialized = await initializeGoogleSheets();
-                if (!initialized) {
-                    updateConnectionStatus('red', 'Server Connected — Initializing');
-                    scheduleBackgroundReconnect();
+                    updateConnectionStatus('red', 'Connection Failed');
+                    showToast('❌ Server connection failed. Please try again.', 'error');
                 } else {
                     updateConnectionStatus('green', 'Server Connected ✓');
+                    showToast('✅ Server reconnected successfully.', 'success');
                 }
             } catch (err) {
                 console.error('Reconnect failed:', err);
-                serverConnected = false;
                 sheetsInitialized = false;
-                updateConnectionStatus('red', 'Server Unavailable — Retrying');
-                scheduleBackgroundReconnect();
+                updateConnectionStatus('red', 'Connection Failed');
+                showToast('❌ Reconnection failed: ' + (err.message || 'Unknown error'), 'error');
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('reconnecting');
+                btn.disabled = false; btn.classList.remove('reconnecting');
             }
         }
 
@@ -2726,19 +2581,21 @@ const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
             if (sheetsInitialized) return true;
 
             if (!SheetAPI.isConfigured()) {
+                console.log('Server not configured. Using local storage.');
                 updateConnectionStatus('red', 'Server Not Configured');
                 return false;
             }
 
-            // The lightweight connection monitor already verified the server.
-            // If not, verify once with a strict real server request.
-            if (!serverConnected) {
-                const connected = await connectToServerWithRetry({ silent: true, maxRetries: 2 });
-                if (!connected) return false;
-            }
+            updateConnectionStatus('connecting', 'Connecting to Server...');
 
-            updateConnectionStatus('connecting', 'Loading server data...');
             try {
+                // Test connection first
+                const testResult = await SheetAPI.fetchFromSheet('testConnection');
+                if (!testResult.success) {
+                    console.warn('Cannot connect to Server API.');
+                    updateConnectionStatus('red', 'Connection Failed');
+                    return false;
+                }
 
                 // Initialize all sheets in parallel instead of seven sequential HTTP calls.
                 const sheetTypes = ['Users', 'Dealers', 'Invoices', 'Receipts', 'Letters', 'PALs', 'DOs'];
@@ -2757,17 +2614,13 @@ const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
                     showToast('✅ Server connected and initialized!', 'success');
                 } else {
                     console.warn('Server initialization partially failed.');
-                    sheetsInitialized = false;
-                    updateConnectionStatus('red', 'Server Connected — Initializing');
-                    scheduleBackgroundReconnect();
+                    updateConnectionStatus('red', 'Partial Connection');
+                    showToast('⚠️ Some sheets failed to initialize. Check console.', 'error');
                 }
                 return allInitialized;
             } catch (error) {
                 console.error('Error initializing Server:', error);
-                sheetsInitialized = false;
-                serverConnected = false;
-                updateConnectionStatus('red', 'Server Unavailable — Retrying');
-                scheduleBackgroundReconnect();
+                updateConnectionStatus('red', 'Connection Error');
                 return false;
             }
         }
@@ -3597,8 +3450,6 @@ const SERVER_RETRY_DELAYS = [0, 700, 1200, 2000, 3500, 5000];
         }
 
         document.getElementById('loginBtn').addEventListener('click', attemptLogin);
-        // Begin server connection immediately when the site opens.
-        startServerConnectionMonitor();
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') attemptLogin();
         });
