@@ -679,6 +679,27 @@
                 transform: translateY(0);
             }
         }
+        .section-title-row {
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:16px;
+            margin-bottom:6px;
+            flex-wrap:wrap;
+        }
+        .section-title-row h2 { margin-bottom:0; }
+        .btn-reset {
+            background:transparent;
+            color:var(--btn-danger);
+            border:1px solid var(--btn-danger);
+        }
+        .btn-reset:hover {
+            background:var(--btn-danger);
+            color:#fff;
+            transform:translateY(-1px);
+            box-shadow:0 4px 14px rgba(179,60,60,.2);
+        }
+
         .page-section h2 {
             font-size: 24px;
             font-weight: 700;
@@ -785,19 +806,6 @@
             background: var(--accent-light);
             transform: translateY(-1px);
             box-shadow: 0 4px 14px rgba(26, 75, 140, 0.25);
-        }
-
-        /* ===== RESET BUTTON ===== */
-        .btn-reset {
-            background: transparent;
-            border: 1px solid var(--btn-danger);
-            color: var(--btn-danger);
-        }
-        .btn-reset:hover {
-            background: var(--btn-danger);
-            color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 14px rgba(179, 60, 60, 0.25);
         }
 
         .table-wrap {
@@ -1882,21 +1890,18 @@
 
                 <!-- GST -->
                 <div id="gstPage" class="page-section">
-                    <h2>GST Calculator</h2>
+                    <div class="section-title-row"><div><h2>GST Calculator</h2></div><button type="button" class="btn btn-reset" data-reset-tab="gstPage"><i class="fas fa-rotate-left"></i> Reset</button></div>
                     <p class="section-desc">Calculate GST from ex-showroom price with variable rate.</p>
                     <div class="card">
                         <div class="gst-row"><div class="form-group"><label>Ex-Showroom Price (₹)</label><input type="number" id="exShowroomPrice" value="100000" step="100" /></div><div class="form-group"><label>GST Rate (%)</label><input type="number" id="gstRate" value="18" step="0.5" min="0" max="100" /></div></div>
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                            <button class="btn btn-primary" id="calcGstBtn"><i class="fas fa-sync"></i> Calculate</button>
-                            <button class="btn btn-reset" id="resetGstBtn"><i class="fas fa-undo"></i> Reset</button>
-                        </div>
+                        <button class="btn btn-primary" id="calcGstBtn"><i class="fas fa-sync"></i> Calculate</button>
                         <div class="gst-result"><div class="stat"><div class="label">Basic Price</div><div class="value" id="gstBasic">₹ 84,746</div></div><div class="stat"><div class="label">GST Amount</div><div class="value gst-amount" id="gstAmount">₹ 15,254</div></div><div class="stat"><div class="label">Total (On-Road)</div><div class="value total" id="gstTotal">₹ 1,00,000</div></div></div>
                     </div>
                 </div>
 
                 <!-- INVOICE -->
                 <div id="invoicePage" class="page-section">
-                    <h2>Invoice Generator</h2>
+                    <div class="section-title-row"><div><h2>Invoice Generator</h2></div></div>
                     <p class="section-desc">Create a professional invoice with multiple items. Number auto-generates on save.</p>
                     <div class="card">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -1926,9 +1931,9 @@
                         <div class="totals-row" id="invoiceTotals"><div><span>Subtotal:</span> ₹0</div><div><span>Total Tax:</span> ₹0</div><div style="font-size:18px;color:var(--btn-success);"><span>Grand Total:</span> ₹0</div></div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
                             <button class="btn btn-success" id="saveInvoiceBtn"><i class="fas fa-save"></i> Save</button>
+                            <button type="button" class="btn btn-reset" data-reset-tab="invoicePage"><i class="fas fa-rotate-left"></i> Reset</button>
                             <button class="btn btn-primary" id="generateInvoiceBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printInvoiceBtn"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn btn-reset" id="resetInvoiceBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="preview-box invoice-preview" id="invoicePreview"><strong>Invoice Preview</strong><br />Add items and click Preview.</div>
                     </div>
@@ -1940,7 +1945,7 @@
 
                 <!-- MONEY RECEIPT -->
                 <div id="receiptPage" class="page-section">
-                    <h2>Money Receipt</h2>
+                    <div class="section-title-row"><div><h2>Money Receipt</h2></div></div>
                     <p class="section-desc">Generate a professional money receipt. Number auto-generates on save.</p>
                     <div class="card">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -1971,9 +1976,9 @@
                         <div class="totals-row" id="receiptTotals"><div><span>Subtotal:</span> ₹0</div><div><span>Total Tax:</span> ₹0</div><div style="font-size:18px;color:var(--btn-success);"><span>Grand Total:</span> ₹0</div></div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
                             <button class="btn btn-success" id="saveReceiptBtn"><i class="fas fa-save"></i> Save</button>
+                            <button type="button" class="btn btn-reset" data-reset-tab="receiptPage"><i class="fas fa-rotate-left"></i> Reset</button>
                             <button class="btn btn-primary" id="generateReceiptBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printReceiptBtn"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn btn-reset" id="resetReceiptBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="receipt-preview" id="receiptPreview"><div class="receipt-company">KK INFOTECH Solutions Pvt. Ltd.</div><div class="receipt-address">123 Business Park, Mumbai - 400001, India</div><div class="receipt-title">MONEY RECEIPT</div><div style="margin:12px 0;"><div class="receipt-row"><span>Receipt #</span><span>RCP-2026-001</span></div><div class="receipt-row"><span>Date</span><span>22-Jul-2026</span></div><div class="receipt-row"><span>Received From</span><span>Mr. Suresh Patel</span></div><div class="receipt-row"><span>Payment Mode</span><span>Bank Transfer</span></div><div class="receipt-row total"><span>Amount</span><span>₹ 25,000</span></div></div><div class="receipt-sign"><div><span>Receiver's Signature</span><div class="sign-line" style="width:140px;margin-top:4px;"></div></div><div><span>Authorized Signatory</span><div class="sign-line" style="width:140px;margin-top:4px;">Mr. Rajesh Kumar</div></div></div><div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border-color);padding-top:10px;">This is a computer-generated receipt.</div></div>
                     </div>
@@ -1985,7 +1990,7 @@
 
                 <!-- LETTER HEAD -->
                 <div id="letterPage" class="page-section">
-                    <h2>Letter Head Generator</h2>
+                    <div class="section-title-row"><div><h2>Letter Head Generator</h2></div></div>
                     <p class="section-desc">Create a professional letterhead for your business.</p>
                     <div class="card">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -2001,9 +2006,9 @@ Management</textarea></div>
                         </div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
                             <button class="btn btn-success" id="saveLetterBtn"><i class="fas fa-save"></i> Save</button>
+                            <button type="button" class="btn btn-reset" data-reset-tab="letterPage"><i class="fas fa-rotate-left"></i> Reset</button>
                             <button class="btn btn-primary" id="generateLetterBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printLetterBtn"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn btn-reset" id="resetLetterBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="letter-head-preview" id="letterPreview"><div class="lh-company">KK INFOTECH Solutions Pvt. Ltd.</div><div class="lh-address">123 Business Park, Mumbai - 400001, India</div><div class="lh-line"></div><div class="lh-body">Fill in the details and click Preview.</div><div style="margin-top:24px;border-top:1px solid var(--border-color);padding-top:12px;display:flex;justify-content:flex-end;font-size:14px;"><div><span>Authorized Signatory</span><div style="border-top:1px solid var(--text-primary);width:160px;margin-top:4px;text-align:center;">Mr. Rajesh Kumar</div></div></div></div>
                     </div>
@@ -2015,7 +2020,7 @@ Management</textarea></div>
 
                 <!-- PAL -->
                 <div id="palPage" class="page-section">
-                    <h2>Principal Approval Letter (PAL)</h2>
+                    <div class="section-title-row"><div><h2>Principal Approval Letter (PAL)</h2></div></div>
                     <p class="section-desc">Generate a Principal Approval Letter in the standard format.</p>
                     <div class="card">
                         <div class="pal-form-grid">
@@ -2049,9 +2054,9 @@ Management</textarea></div>
                         </div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
                             <button class="btn btn-success" id="savePalBtn"><i class="fas fa-save"></i> Save</button>
+                            <button type="button" class="btn btn-reset" data-reset-tab="palPage"><i class="fas fa-rotate-left"></i> Reset</button>
                             <button class="btn btn-primary" id="generatePalBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printPalBtn"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn btn-reset" id="resetPalBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="pal-preview" id="palPreview"><div style="text-align:center;padding:30px 0;color:var(--text-muted);">Fill in the details and click Preview.</div></div>
                     </div>
@@ -2063,7 +2068,7 @@ Management</textarea></div>
 
                 <!-- DO -->
                 <div id="doPage" class="page-section">
-                    <h2>Delivery Order (DO)</h2>
+                    <div class="section-title-row"><div><h2>Delivery Order (DO)</h2></div></div>
                     <p class="section-desc">Generate a Delivery Order in the standard format.</p>
                     <div class="card">
                         <div class="do-form-grid">
@@ -2123,9 +2128,9 @@ Management</textarea></div>
                         </div>
                         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
                             <button class="btn btn-success" id="saveDoBtn"><i class="fas fa-save"></i> Save</button>
+                            <button type="button" class="btn btn-reset" data-reset-tab="doPage"><i class="fas fa-rotate-left"></i> Reset</button>
                             <button class="btn btn-primary" id="generateDoBtn"><i class="fas fa-eye"></i> Preview</button>
                             <button class="btn btn-print" id="printDoBtn"><i class="fas fa-print"></i> Print</button>
-                            <button class="btn btn-reset" id="resetDoBtn"><i class="fas fa-undo"></i> Reset</button>
                         </div>
                         <div class="do-preview" id="doPreview"><div style="text-align:center;padding:30px 0;color:var(--text-muted);">Fill in the details and click Preview.</div></div>
                     </div>
@@ -2202,114 +2207,28 @@ Management</textarea></div>
         };
 
         // ================================================================
-        //  STORAGE MANAGER (Local Storage Fallback)
+        //  CLIENT DATA POLICY
         // ================================================================
+        // No business/application data is persisted in browser storage.
+        // Google Apps Script + Google Sheets is the only persistent data source.
         const StorageManager = {
-            _prefix: 'kkinfotech_',
-
-            getUsersLocal() {
-                try {
-                    const data = localStorage.getItem(this._prefix + 'users');
-                    return data ? JSON.parse(data) : null;
-                } catch { return null; }
-            },
-
-            saveUsersLocal(users) {
-                localStorage.setItem(this._prefix + 'users', JSON.stringify(users));
-            },
-
-            getDealersLocal() {
-                try {
-                    const data = localStorage.getItem(this._prefix + 'dealers');
-                    return data ? JSON.parse(data) : null;
-                } catch { return null; }
-            },
-
-            saveDealersLocal(dealers) {
-                localStorage.setItem(this._prefix + 'dealers', JSON.stringify(dealers));
-            },
-
-            getDocumentsLocal(type) {
-                try {
-                    const data = localStorage.getItem(this._prefix + 'docs_' + type);
-                    return data ? JSON.parse(data) : [];
-                } catch { return []; }
-            },
-
-            saveDocumentsLocal(type, docs) {
-                localStorage.setItem(this._prefix + 'docs_' + type, JSON.stringify(docs));
-            },
-
-            removeDocumentsLocal(type) {
-                try {
-                    localStorage.removeItem(this._prefix + 'docs_' + type);
-                } catch (e) {
-                    console.warn('Unable to remove local document cache:', e);
-                }
-            },
-
-            getUserLogsLocal() {
-                try { const data = localStorage.getItem(this._prefix + 'user_logs'); return data ? JSON.parse(data) : []; } catch { return []; }
-            },
-
-            saveUserLogsLocal(logs) {
-                localStorage.setItem(this._prefix + 'user_logs', JSON.stringify((logs || []).slice(-2000)));
-            },
-
-            // Persistent login session. The session stays active after browser/page refresh
-            // and is removed only when the user explicitly logs out or the account is disabled.
-            getSessionLocal() {
-                try {
-                    const data = localStorage.getItem(this._prefix + 'session');
-                    return data ? JSON.parse(data) : null;
-                } catch { return null; }
-            },
-
-            saveSessionLocal(user, activePage = '') {
-                if (!user) return;
-                const safeUser = { ...user };
-                delete safeUser.password;
-                this.markCurrentTabSession();
-                localStorage.setItem(this._prefix + 'session', JSON.stringify({
-                    user: safeUser,
-                    activePage: activePage || '',
-                    updatedAt: new Date().toISOString()
-                }));
-            },
-
-            clearSessionLocal() {
-                localStorage.removeItem(this._prefix + 'session');
-                try { sessionStorage.removeItem(this._prefix + 'session_tab'); } catch (e) {}
-            },
-            hasCurrentTabSession() { try { return sessionStorage.getItem(this._prefix + 'session_tab') === 'active'; } catch (e) { return false; } },
-            markCurrentTabSession() { try { sessionStorage.setItem(this._prefix + 'session_tab', 'active'); } catch (e) {} },
-
-            getAllDataLocal() {
-                const data = {
-                    users: this.getUsersLocal(),
-                    dealers: this.getDealersLocal(),
-                    documents: {}
-                };
-                const docTypes = ['invoice', 'receipt', 'letter', 'pal', 'do'];
-                docTypes.forEach(type => {
-                    data.documents[type] = this.getDocumentsLocal(type);
-                });
-                return data;
-            },
-
-            restoreAllDataLocal(data) {
-                if (data.users) this.saveUsersLocal(data.users);
-                if (data.dealers) this.saveDealersLocal(data.dealers);
-                if (data.documents) {
-                    Object.keys(data.documents).forEach(type => {
-                        this.saveDocumentsLocal(type, data.documents[type]);
-                    });
-                }
-            },
-
-            generateId() {
-                return 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            }
+            getUsersLocal() { return null; },
+            saveUsersLocal() {},
+            getDealersLocal() { return null; },
+            saveDealersLocal() {},
+            getDocumentsLocal() { return []; },
+            saveDocumentsLocal() {},
+            removeDocumentsLocal() {},
+            getUserLogsLocal() { return []; },
+            saveUserLogsLocal() {},
+            getSessionLocal() { return null; },
+            saveSessionLocal() {},
+            clearSessionLocal() {},
+            hasCurrentTabSession() { return false; },
+            markCurrentTabSession() {},
+            getAllDataLocal() { return null; },
+            restoreAllDataLocal() {},
+            generateId() { return 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
         };
 
         // ================================================================
@@ -2322,18 +2241,27 @@ Management</textarea></div>
                     GOOGLE_APPS_SCRIPT_URL.startsWith('https://script.google.com');
             },
 
-            async fetchFromSheet(action, payload = {}) {
+            async fetchFromSheet(action, payload = {}, options = {}) {
                 if (!this.isConfigured()) {
-                    console.warn('Google Apps Script URL not configured. Using localStorage fallback.');
-                    return this.fallbackToLocal(action, payload);
+                    throw new Error('Google Apps Script server URL is not configured.');
                 }
 
+                const controller = new AbortController();
+                const timeoutMs = Number(options.timeout || 15000);
+                const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
                 try {
+                    // Use a simple text/plain POST so GitHub Pages does not trigger
+                    // a CORS preflight. Apps Script Web Apps commonly redirect the
+                    // request internally; fetch follows that redirect automatically.
                     const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'cors',
+                        redirect: 'follow',
+                        cache: 'no-store',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action, payload })
+                        body: JSON.stringify({ action, payload }),
+                        signal: controller.signal
                     });
 
                     const text = await response.text();
@@ -2341,149 +2269,29 @@ Management</textarea></div>
                     try {
                         result = JSON.parse(text);
                     } catch (e) {
-                        throw new Error('Invalid JSON response from Google Apps Script.');
+                        throw new Error('Server returned a non-JSON response. Check the Apps Script Web App deployment and access setting.');
                     }
 
+                    if (!response.ok) {
+                        throw new Error(result?.error || `Server HTTP error ${response.status}.`);
+                    }
                     if (!result || result.success === false) {
                         throw new Error(result?.error || 'Server returned an error.');
                     }
-
                     return { success: true, ...result };
-                } catch (error) {
-                    console.error('SheetAPI Error:', error);
-                    return this.fallbackToLocal(action, payload);
+                } catch (err) {
+                    if (err?.name === 'AbortError') {
+                        throw new Error('Server request timed out. Retrying automatically.');
+                    }
+                    throw err;
+                } finally {
+                    clearTimeout(timeout);
                 }
             },
 
-            // STRICT BACKEND MODE:
-            // Used for business documents. It NEVER falls back to localStorage.
+            // Strict backend-only request. Kept as a separate method for document operations.
             async fetchFromSheetStrict(action, payload = {}) {
-                if (!this.isConfigured()) {
-                    throw new Error('Google Apps Script URL is not configured.');
-                }
-
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action, payload })
-                });
-
-                const text = await response.text();
-                let result;
-                try {
-                    result = JSON.parse(text);
-                } catch (e) {
-                    throw new Error('Invalid JSON response from Google Apps Script.');
-                }
-
-                if (!response.ok) {
-                    throw new Error(result?.error || `Google Apps Script HTTP error ${response.status}.`);
-                }
-
-                if (!result || result.success === false) {
-                    throw new Error(result?.error || 'Server backend rejected the request.');
-                }
-
-                return { success: true, ...result };
-            },
-
-            fallbackToLocal(action, payload) {
-                console.warn('Using localStorage fallback for action:', action);
-                switch (action) {
-                    case 'testConnection':
-                        return { success: true, message: 'Using local storage' };
-                    case 'initializeSheet':
-                        return { success: true, message: 'Sheet initialized locally' };
-                    case 'login': {
-                        const localUsers = StorageManager.getUsersLocal() || [];
-                        const u = localUsers.find(x =>
-                            String(x.username || '').toLowerCase() === String(payload.username || '').toLowerCase() &&
-                            String(x.password || '') === String(payload.password || '') &&
-                            String(x.role || '') === String(payload.role || '')
-                        );
-                        return u ? { success: true, user: u } : { success: false, error: 'Invalid credentials.' };
-                    }
-                    case 'getUserLogs':
-                    case 'saveUserLog':
-                    case 'clearUserLogs':
-                        return { success: false, error: 'User logs are backend-only. Server connection is required.' };
-                    case 'getUsers':
-                        return { success: true, data: StorageManager.getUsersLocal() || [] };
-                    case 'getDealers':
-                        return { success: true, data: StorageManager.getDealersLocal() || {} };
-                    case 'getDocs':
-                        return { success: true, data: StorageManager.getDocumentsLocal(payload.type) || [] };
-                    case 'saveUser': {
-                        let localUsers = StorageManager.getUsersLocal() || [];
-                        const idx = localUsers.findIndex(u => String(u.id) === String(payload.user.id));
-                        if (idx >= 0) localUsers[idx] = { ...localUsers[idx], ...payload.user };
-                        else localUsers.push(payload.user);
-                        StorageManager.saveUsersLocal(localUsers);
-                        return { success: true, user: payload.user };
-                    }
-                    case 'deleteUser': {
-                        let localUsers = StorageManager.getUsersLocal() || [];
-                        localUsers = localUsers.filter(u => String(u.id) !== String(payload.id));
-                        StorageManager.saveUsersLocal(localUsers);
-                        return { success: true };
-                    }
-                    case 'saveDealer': {
-                        let localDealers = StorageManager.getDealersLocal() || {};
-                        localDealers[payload.dealer.name] = {
-                            city: payload.dealer.city || '',
-                            addr1: payload.dealer.addr1 || '',
-                            addr2: payload.dealer.addr2 || '',
-                            addr3: payload.dealer.addr3 || ''
-                        };
-                        StorageManager.saveDealersLocal(localDealers);
-                        return { success: true, dealer: payload.dealer };
-                    }
-                    case 'deleteDealer': {
-                        let localDealers = StorageManager.getDealersLocal() || {};
-                        delete localDealers[payload.name];
-                        StorageManager.saveDealersLocal(localDealers);
-                        return { success: true };
-                    }
-                    case 'saveDoc': {
-                        let docs = StorageManager.getDocumentsLocal(payload.doc.type) || [];
-                        const idx = docs.findIndex(d => String(d.id) === String(payload.doc.id));
-                        if (idx >= 0) docs[idx] = payload.doc;
-                        else docs.push(payload.doc);
-                        StorageManager.saveDocumentsLocal(payload.doc.type, docs);
-                        return { success: true, doc: payload.doc };
-                    }
-                    case 'deleteDoc': {
-                        let docs = StorageManager.getDocumentsLocal(payload.type) || [];
-                        docs = docs.filter(d => String(d.id) !== String(payload.id));
-                        StorageManager.saveDocumentsLocal(payload.type, docs);
-                        return { success: true };
-                    }
-                    case 'changePassword': {
-                        let localUsers = StorageManager.getUsersLocal() || [];
-                        const idx = localUsers.findIndex(u => String(u.id) === String(payload.userId));
-                        if (idx < 0 || localUsers[idx].password !== payload.currentPassword)
-                            return { success: false, error: 'Current password is incorrect.' };
-                        localUsers[idx].password = payload.newPassword;
-                        StorageManager.saveUsersLocal(localUsers);
-                        return { success: true };
-                    }
-                    case 'resetPassword': {
-                        let localUsers = StorageManager.getUsersLocal() || [];
-                        const idx = localUsers.findIndex(u => String(u.id) === String(payload.userId));
-                        if (idx < 0) return { success: false, error: 'User not found.' };
-                        localUsers[idx].password = payload.newPassword;
-                        StorageManager.saveUsersLocal(localUsers);
-                        return { success: true };
-                    }
-                    case 'getAllData':
-                        return { success: true, data: StorageManager.getAllDataLocal() };
-                    case 'restoreAllData':
-                        StorageManager.restoreAllDataLocal(payload.data);
-                        return { success: true, message: 'Data restored' };
-                    default:
-                        return { success: false, error: 'Unknown action: ' + action };
-                }
+                return this.fetchFromSheet(action, payload);
             },
 
             generateId() {
@@ -2501,6 +2309,9 @@ Management</textarea></div>
         const DEFAULT_STAMP_URL = 'stamp.png';
         let stampDataURL = DEFAULT_STAMP_URL;
         let sheetsInitialized = false;
+        let serverRetryTimer = null;
+        let serverRetryInProgress = false;
+        let serverRetryNoticeShown = false;
 
         // ================================================================
         //  CONNECTION STATUS INDICATOR
@@ -2558,9 +2369,16 @@ Management</textarea></div>
             try {
                 const connected = await initializeGoogleSheets();
                 if (!connected) {
-                    updateConnectionStatus('red', 'Connection Failed');
-                    showToast('❌ Server connection failed. Please try again.', 'error');
+                    updateConnectionStatus('red', 'Server Disconnected — Retrying...');
+                    showToast('⚠️ Server is unavailable. Automatic retry will continue.', 'error');
                 } else {
+                    try {
+                        await Promise.all([loadUsers(), loadDealers()]);
+                        populateDealerDropdowns();
+                        updateStorageStatus();
+                    } catch (refreshErr) {
+                        console.warn('Connected, but backend data refresh failed:', refreshErr);
+                    }
                     updateConnectionStatus('green', 'Server Connected ✓');
                     showToast('✅ Server reconnected successfully.', 'success');
                 }
@@ -2577,51 +2395,84 @@ Management</textarea></div>
         document.getElementById('reconnectServerBtn')?.addEventListener('click', reconnectToServer);
         document.getElementById('loginServerButton')?.addEventListener('click', reconnectToServer);
 
+        function startServerAutoRetry() {
+            if (serverRetryTimer) return;
+            serverRetryTimer = setInterval(async () => {
+                if (!SheetAPI.isConfigured() || sheetsInitialized || serverRetryInProgress) return;
+                serverRetryInProgress = true;
+                try {
+                    const connected = await initializeGoogleSheets();
+                    if (connected) {
+                        serverRetryNoticeShown = false;
+                        try {
+                            await Promise.all([loadUsers(), loadDealers()]);
+                            populateDealerDropdowns();
+                            updateStorageStatus();
+                            if (currentUser) {
+                                const fresh = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
+                                if (fresh) { currentUser = { ...currentUser, ...fresh }; updateHeaderForCurrentUser(); applyTabPermissions(); }
+                            }
+                        } catch (refreshErr) {
+                            console.warn('Server data refresh after reconnect failed:', refreshErr);
+                        }
+                    }
+                } catch (err) {
+                    if (!serverRetryNoticeShown) {
+                        console.warn('Server unavailable. Automatic retry will continue.', err);
+                        serverRetryNoticeShown = true;
+                    }
+                } finally {
+                    serverRetryInProgress = false;
+                }
+            }, 5000);
+        }
+
+        startServerAutoRetry();
+
         async function initializeGoogleSheets() {
             if (sheetsInitialized) return true;
 
             if (!SheetAPI.isConfigured()) {
-                console.log('Server not configured. Using local storage.');
                 updateConnectionStatus('red', 'Server Not Configured');
                 return false;
             }
 
+            if (serverRetryInProgress) return false;
+            serverRetryInProgress = true;
             updateConnectionStatus('connecting', 'Connecting to Server...');
 
             try {
-                // Test connection first
-                const testResult = await SheetAPI.fetchFromSheet('testConnection');
-                if (!testResult.success) {
-                    console.warn('Cannot connect to Server API.');
-                    updateConnectionStatus('red', 'Connection Failed');
-                    return false;
+                // IMPORTANT: Do NOT require every sheet to initialize before
+                // declaring the server connected. A single missing/renamed sheet
+                // previously made the whole application show "Server Disconnected"
+                // even when the Apps Script Web App itself was reachable.
+                let health = null;
+                try {
+                    health = await SheetAPI.fetchFromSheet('testConnection', {}, { timeout: 12000 });
+                } catch (healthErr) {
+                    console.warn('testConnection failed; trying a real backend read:', healthErr);
                 }
 
-                // Initialize all sheets in parallel instead of seven sequential HTTP calls.
-                const sheetTypes = ['Users', 'Dealers', 'Invoices', 'Receipts', 'Letters', 'PALs', 'DOs'];
-                const results = await Promise.all(sheetTypes.map(sheetType =>
-                    SheetAPI.fetchFromSheet('initializeSheet', { sheetType }).catch(err => ({ success: false, error: err.message }))
-                ));
-                const allInitialized = results.every(r => r && r.success);
-                results.forEach((r, i) => {
-                    if (!r || !r.success) console.warn(`Failed to initialize sheet: ${sheetTypes[i]}`, r?.error || 'Unknown error');
-                });
-
-                sheetsInitialized = allInitialized;
-                if (allInitialized) {
-                    console.log('Server initialized successfully');
-                    updateConnectionStatus('green', 'Server Connected ✓');
-                    showToast('✅ Server connected and initialized!', 'success');
-                } else {
-                    console.warn('Server initialization partially failed.');
-                    updateConnectionStatus('red', 'Partial Connection');
-                    showToast('⚠️ Some sheets failed to initialize. Check console.', 'error');
+                // Some older Code.gs versions do not implement testConnection.
+                // A successful getUsers/getDealers call is also a valid health check.
+                if (!health || health.success !== true) {
+                    const probe = await SheetAPI.fetchFromSheet('getUsers', {}, { timeout: 15000 });
+                    if (!probe || probe.success !== true) {
+                        throw new Error(probe?.error || 'Backend did not respond successfully.');
+                    }
+                    if (Array.isArray(probe.data)) users = probe.data;
                 }
-                return allInitialized;
+
+                sheetsInitialized = true;
+                updateConnectionStatus('green', 'Server Connected ✓');
+                return true;
             } catch (error) {
-                console.error('Error initializing Server:', error);
-                updateConnectionStatus('red', 'Connection Error');
+                sheetsInitialized = false;
+                updateConnectionStatus('red', 'Server Disconnected — Retrying...');
+                console.warn('Server connection failed. Automatic retry remains active:', error);
                 return false;
+            } finally {
+                serverRetryInProgress = false;
             }
         }
 
@@ -2629,63 +2480,26 @@ Management</textarea></div>
         //  DATA LOAD FUNCTIONS
         // ================================================================
         async function loadUsers() {
-            // First try to initialize sheets if not done
-            if (!sheetsInitialized && SheetAPI.isConfigured()) {
-                await initializeGoogleSheets();
+            if (!SheetAPI.isConfigured()) throw new Error('Server backend is not configured.');
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) throw new Error('Server backend is unavailable.');
             }
 
-            const result = await SheetAPI.fetchFromSheet('getUsers');
-            if (result.success && result.data && result.data.length > 0) {
-                const cached = StorageManager.getUsersLocal() || [];
-                const passwordByUser = new Map(cached.map(u => [
-                    String(u.id || u.username || '').toLowerCase(), u.password || ''
-                ]));
-                users = result.data.map(u => ({
-                    ...u,
-                    password: passwordByUser.get(String(u.id || u.username || '').toLowerCase()) || ''
-                }));
-                StorageManager.saveUsersLocal(users);
-                if (sheetsInitialized) {
-                    updateConnectionStatus('green', 'Server Connected ✓');
-                }
-            } else {
-                const stored = StorageManager.getUsersLocal();
-                if (stored && stored.length > 0) {
-                    users = stored;
-                } else {
-                    users = JSON.parse(JSON.stringify(DEFAULT_USERS));
-                    StorageManager.saveUsersLocal(users);
-                    // Try to sync to Server
-                    if (SheetAPI.isConfigured()) {
-                        for (const user of users) {
-                            await SheetAPI.fetchFromSheet('saveUser', { user });
-                        }
-                    }
-                }
-                if (!sheetsInitialized) {
-                    updateConnectionStatus('red', 'Local Storage Only');
-                }
-            }
+            const result = await SheetAPI.fetchFromSheetStrict('getUsers');
+            if (!result.success) throw new Error(result.error || 'Unable to load users from Server.');
 
-            // IMPORTANT: Server is the source of truth for tab permissions.
-            // Never automatically grant normal users the core tabs.
+            users = Array.isArray(result.data) ? result.data : [];
             users.forEach(u => {
                 let tabs = Array.isArray(u.tabs) ? [...u.tabs] : [];
-
                 if (u.role === 'admin') {
-                    // Admin-only management tabs remain available to admins.
-                    if (!tabs.includes('dashboardPage')) tabs.push('dashboardPage');
-                    if (!tabs.includes('usersPage')) tabs.push('usersPage');
-                    if (!tabs.includes('dealersPage')) tabs.push('dealersPage');
+                    ['dashboardPage','usersPage','dealersPage'].forEach(t => { if (!tabs.includes(t)) tabs.push(t); });
                 } else {
-                    // Normal users only get exactly what is stored in Server.
-                    tabs = tabs.filter(t =>
-                        !['dashboardPage', 'usersPage', 'dealersPage'].includes(t)
-                    );
+                    tabs = tabs.filter(t => !['dashboardPage','usersPage','dealersPage'].includes(t));
                 }
-
                 u.tabs = [...new Set(tabs)];
             });
+            updateConnectionStatus('green', 'Server Connected ✓');
             return users;
         }
 
@@ -2733,57 +2547,39 @@ Management</textarea></div>
                 }
             }
 
-            // Cache only after Server confirms the save.
-            StorageManager.saveUsersLocal(users);
             showToast(`✅ ${list.length === 1 ? 'User permissions' : 'Users'} saved to Server.`, 'success');
             return true;
         }
 
         async function loadDealers() {
-            if (!sheetsInitialized && SheetAPI.isConfigured()) {
-                await initializeGoogleSheets();
+            if (!SheetAPI.isConfigured()) throw new Error('Server backend is not configured.');
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) throw new Error('Server backend is unavailable.');
             }
-
-            const result = await SheetAPI.fetchFromSheet('getDealers');
-            if (result.success && result.data && Object.keys(result.data).length > 0) {
-                dealerData = result.data;
-                StorageManager.saveDealersLocal(dealerData);
-                if (sheetsInitialized) {
-                    updateConnectionStatus('green', 'Server Connected ✓');
-                }
-            } else {
-                const stored = StorageManager.getDealersLocal();
-                if (stored && Object.keys(stored).length > 0) {
-                    dealerData = stored;
-                } else {
-                    dealerData = JSON.parse(JSON.stringify(DEFAULT_DEALERS));
-                    StorageManager.saveDealersLocal(dealerData);
-                    if (SheetAPI.isConfigured()) {
-                        for (const [name, details] of Object.entries(dealerData)) {
-                            await SheetAPI.fetchFromSheet('saveDealer', { dealer: { name, ...details } });
-                        }
-                    }
-                }
-                if (!sheetsInitialized) {
-                    updateConnectionStatus('red', 'Local Storage Only');
-                }
-            }
+            const result = await SheetAPI.fetchFromSheetStrict('getDealers');
+            if (!result.success) throw new Error(result.error || 'Unable to load dealers from Server.');
+            dealerData = result.data && typeof result.data === 'object' ? result.data : {};
+            updateConnectionStatus('green', 'Server Connected ✓');
             return dealerData;
         }
 
         async function saveDealers() {
-            StorageManager.saveDealersLocal(dealerData);
-            if (SheetAPI.isConfigured() && sheetsInitialized) {
-                for (const [name, details] of Object.entries(dealerData)) {
-                    await SheetAPI.fetchFromSheet('saveDealer', { dealer: { name, ...details } });
-                }
-                showToast('✅ Dealers synced to server!', 'success');
+            if (!SheetAPI.isConfigured()) throw new Error('Google Apps Script server URL is not configured.');
+            if (!sheetsInitialized) {
+                const connected = await initializeGoogleSheets();
+                if (!connected) throw new Error('Server backend is unavailable.');
             }
+            for (const [name, details] of Object.entries(dealerData)) {
+                await SheetAPI.fetchFromSheetStrict('saveDealer', { dealer: { name, ...details } });
+            }
+            updateConnectionStatus('green', 'Server Connected ✓');
+            showToast('✅ Dealers saved to Server!', 'success');
         }
 
         async function loadDocs(type) {
             // Business documents are Server only. Never read document data
-            // from localStorage when the backend is unavailable.
+            // from the browser when the backend is unavailable.
             if (!SheetAPI.isConfigured()) {
                 showToast('⚠️ Server backend is not configured. Document data is unavailable.', 'error');
                 return [];
@@ -2803,9 +2599,6 @@ Management</textarea></div>
                     throw new Error(result?.error || 'Unable to load documents from Server.');
                 }
 
-                // Remove any legacy local document cache so document data is not
-                // retained in this browser.
-                StorageManager.removeDocumentsLocal(type);
                 return Array.isArray(result.data) ? result.data : [];
             } catch (error) {
                 console.error(`Backend-only getDocs failed for ${type}:`, error);
@@ -2817,7 +2610,7 @@ Management</textarea></div>
 
         async function saveDocToStorage(type, doc) {
             // IMPORTANT: despite the legacy function name, documents are NOT
-            // stored in localStorage. They are written directly to Server.
+            // stored in the browser. They are written directly to Server.
             if (!SheetAPI.isConfigured()) {
                 showToast('❌ Server backend is not configured. Nothing was saved.', 'error');
                 return null;
@@ -2837,8 +2630,6 @@ Management</textarea></div>
                     throw new Error(result?.error || 'Server did not confirm the save.');
                 }
 
-                // Explicitly remove any old browser-side document cache.
-                StorageManager.removeDocumentsLocal(type);
                 updateConnectionStatus('green', 'Server Connected ✓');
                 showToast(`✅ ${type.toUpperCase()} saved to Server.`, 'success');
                 return doc;
@@ -2906,14 +2697,7 @@ Management</textarea></div>
                 for (const [name, details] of Object.entries(dealerData)) {
                     await SheetAPI.fetchFromSheet('saveDealer', { dealer: { name, ...details } });
                 }
-                // Sync documents
-                const docTypes = ['invoice', 'receipt', 'letter', 'pal', 'do'];
-                for (const type of docTypes) {
-                    const docs = StorageManager.getDocumentsLocal(type);
-                    for (const doc of docs) {
-                        await SheetAPI.fetchFromSheet('saveDoc', { doc });
-                    }
-                }
+                // No browser-side document cache exists; documents are saved directly to Server.
                 updateConnectionStatus('green', 'Server Connected ✓');
                 showToast('✅ All data synced to server successfully!', 'success');
             } catch (err) {
@@ -2932,17 +2716,20 @@ Management</textarea></div>
                 return;
             }
 
-            let data;
-            if (SheetAPI.isConfigured() && sheetsInitialized) {
-                const result = await SheetAPI.fetchFromSheet('getAllData');
-                if (result.success) {
-                    data = result.data;
-                } else {
-                    data = StorageManager.getAllDataLocal();
-                }
-            } else {
-                data = StorageManager.getAllDataLocal();
+            if (!SheetAPI.isConfigured()) {
+                showToast('❌ Server backend is not configured.', 'error');
+                return;
             }
+            if (!sheetsInitialized && !(await initializeGoogleSheets())) {
+                showToast('❌ Server backend is unavailable.', 'error');
+                return;
+            }
+            const result = await SheetAPI.fetchFromSheetStrict('getAllData');
+            if (!result.success) {
+                showToast('❌ Unable to fetch data from Server.', 'error');
+                return;
+            }
+            const data = result.data;
 
             const json = JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
@@ -2978,11 +2765,9 @@ Management</textarea></div>
                             return;
                         }
 
-                        StorageManager.restoreAllDataLocal(data);
-
-                        if (SheetAPI.isConfigured() && sheetsInitialized) {
-                            await SheetAPI.fetchFromSheet('restoreAllData', { data });
-                        }
+                        if (!SheetAPI.isConfigured()) throw new Error('Server backend is not configured.');
+                        if (!sheetsInitialized && !(await initializeGoogleSheets())) throw new Error('Server backend is unavailable.');
+                        await SheetAPI.fetchFromSheetStrict('restoreAllData', { data });
 
                         await loadUsers();
                         await loadDealers();
@@ -3024,7 +2809,6 @@ Management</textarea></div>
 
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
             if (theme === 'dark') {
                 themeIcon.className = 'fas fa-moon';
                 themeLabel.textContent = 'Dark';
@@ -3039,8 +2823,7 @@ Management</textarea></div>
             setTheme(current === 'light' ? 'dark' : 'light');
         }
         themeToggle.addEventListener('click', toggleTheme);
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
+        setTheme('light');
 
         // ================================================================
         //  DATE / TIME
@@ -3085,7 +2868,6 @@ Management</textarea></div>
             const target = pageSections[pageId];
             if (target) target.classList.add('active');
             navItems.forEach(item => { item.classList.toggle('active', item.dataset.page === pageId); });
-            if (currentUser) StorageManager.saveSessionLocal(currentUser, pageId);
             if (pageId === 'usersPage') renderUserTable();
             if (pageId === 'userLogsPage') renderUserLogs();
             if (pageId === 'dealersPage') renderDealerTable();
@@ -3190,14 +2972,14 @@ Management</textarea></div>
                 statusEl.textContent = 'Connecting...';
                 document.getElementById('storageStatus').className = 'status-badge';
             } else {
-                statusEl.textContent = 'Local';
+                statusEl.textContent = 'Server Offline';
                 document.getElementById('storageStatus').className = 'status-badge error';
             }
         }
 
         // ================================================================
         //  USER ACTIVITY LOGS (GOOGLE SHEETS BACKEND ONLY)
-        //  Logs are never saved in localStorage.
+        //  Logs are backend-only and are never persisted in the browser.
         // ================================================================
         let backendUserLogs = [];
 
@@ -3356,89 +3138,51 @@ Management</textarea></div>
             loginError.textContent = '';
 
             try {
-                // LOCAL CACHE FIRST: instant login when the browser already has a valid
-                // cached account. The server is verified in the background.
-                const localUsers = StorageManager.getUsersLocal() || users || [];
-                const cached = localUsers.find(u =>
-                    String(u.username || '').toLowerCase() === username.toLowerCase() &&
-                    String(u.password || '') === password &&
-                    u.active !== false
-                );
-
-                if (cached) {
-                    currentUser = { ...cached };
-                    users = localUsers;
-                    StorageManager.saveSessionLocal(currentUser);
-                    loginError.textContent = '';
-                    enterDashboard();
-                    showToast('⚡ Fast login successful. Verifying server in background…', 'info');
-
-                    // Do not make the user wait for sheet initialization or other data.
-                    if (SheetAPI.isConfigured()) {
-                        SheetAPI.fetchFromSheet('login', { username, password, role: currentUser.role || 'user' }).then(async result => {
-                            if (!result.success || !result.user) {
-                                console.warn('Background server verification failed. Keeping local session.');
-                                updateConnectionStatus('red', 'Server unavailable — Local mode');
-                                return;
-                            }
-                            currentUser = { ...currentUser, ...result.user };
-                            StorageManager.saveSessionLocal(currentUser);
-                            updateHeaderForCurrentUser();
-                            // Refresh caches without blocking the active session.
-                            if (!sheetsInitialized) {
-                                initializeGoogleSheets().catch(() => {});
-                            }
-                            Promise.all([loadUsers(), loadDealers()]).then(() => {
-                                updateStorageStatus();
-                                populateDealerDropdowns();
-                                const fresh = users.find(u => String(u.id) === String(currentUser.id) ||
-                                    String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
-                                if (fresh) currentUser = { ...currentUser, ...fresh };
-                                updateHeaderForCurrentUser();
-                            }).catch(console.warn);
-                        }).catch(err => {
-                            console.warn('Background login verification error:', err);
-                            updateConnectionStatus('red', 'Server unavailable — Local mode');
-                        });
-                    }
-                    return;
+                // Backend-only authentication: credentials are always verified by the Server.
+                if (!SheetAPI.isConfigured()) throw new Error('Server backend is not configured.');
+                if (!sheetsInitialized) {
+                    const connected = await initializeGoogleSheets();
+                    if (!connected) throw new Error('Server backend is unavailable. Retrying connection automatically.');
                 }
 
-                // No local cache: make only the minimum required server request.
-                let loginResult = await SheetAPI.fetchFromSheet('login', { username, password, role: 'admin' });
+                let loginResult;
+                try {
+                    loginResult = await SheetAPI.fetchFromSheetStrict('login', { username, password, role: 'admin' });
+                } catch (adminErr) {
+                    // A transport/server error is not treated as a local fallback.
+                    throw adminErr;
+                }
                 if (!loginResult.success || !loginResult.user) {
-                    loginResult = await SheetAPI.fetchFromSheet('login', { username, password, role: 'user' });
+                    loginResult = await SheetAPI.fetchFromSheetStrict('login', { username, password, role: 'user' });
                 }
                 if (!loginResult.success || !loginResult.user) {
                     loginError.textContent = loginResult.error || 'Invalid username or password.';
-                    addUserLog('LOGIN FAILED', 'Invalid username or password', { username, role: 'unknown' });
+                    await addUserLog('LOGIN FAILED', 'Invalid username or password', { username, role: 'unknown' });
                     return;
                 }
 
-                const user = loginResult.user;
-                role = user.role || 'user';
-                const localUser = users.find(u => String(u.id) === String(user.id) ||
-                    String(u.username || '').toLowerCase() === String(user.username || '').toLowerCase());
-                currentUser = localUser ? { ...localUser, ...user } : user;
-                // Cache the authenticated user for the next instant login.
-                const cacheUsers = StorageManager.getUsersLocal() || [];
-                const idx = cacheUsers.findIndex(u => String(u.id) === String(user.id));
-                if (idx >= 0) cacheUsers[idx] = { ...cacheUsers[idx], ...user, password };
-                else cacheUsers.push({ ...user, password });
-                StorageManager.saveUsersLocal(cacheUsers);
-                StorageManager.saveSessionLocal(currentUser);
-
+                currentUser = loginResult.user;
+                users = Array.isArray(users) ? users : [];
+                const existing = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
+                if (existing) Object.assign(existing, currentUser);
+                else users.push(currentUser);
+                updateHeaderForCurrentUser();
                 enterDashboard();
-                // Everything else happens in background.
-                Promise.all([
-                    SheetAPI.isConfigured() ? initializeGoogleSheets() : Promise.resolve(false),
-                    loadUsers(),
-                    loadDealers()
-                ]).then(() => {
-                    updateStorageStatus();
+                updateConnectionStatus('green', 'Server Connected ✓');
+
+                // Fetch fresh backend data after login; never use browser storage as a source.
+                try {
+                    await Promise.all([loadUsers(), loadDealers()]);
                     populateDealerDropdowns();
-                }).catch(err => console.warn('Background data refresh:', err));
-            } catch (err) {
+                    updateStorageStatus();
+                    const fresh = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
+                    if (fresh) currentUser = { ...currentUser, ...fresh };
+                    updateHeaderForCurrentUser();
+                    applyTabPermissions();
+                } catch (refreshErr) {
+                    console.warn('Post-login backend refresh failed:', refreshErr);
+                }
+                        } catch (err) {
                 loginError.textContent = 'Login error: ' + err.message;
                 addUserLog('LOGIN FAILED', 'Login error: ' + err.message, { username: loginUsername.value.trim(), role: 'unknown' });
                 console.error('Login error:', err);
@@ -3493,8 +3237,7 @@ Management</textarea></div>
 
             // Auto-load stamp.png from the same GitHub/repository folder.
             // A user-uploaded stamp is used only when one was explicitly saved.
-            const savedStamp = localStorage.getItem('customStamp');
-            stampDataURL = savedStamp || DEFAULT_STAMP_URL;
+            stampDataURL = DEFAULT_STAMP_URL;
             setTimeout(() => { generatePAL(); generateDO(); }, 100);
 
             calcGst();
@@ -3526,7 +3269,7 @@ Management</textarea></div>
                 updateConnectionStatus('red', 'Server Connection Failed');
             } else {
                 statusMsg = 'Using Local Storage. Configure server URL for cloud sync.';
-                updateConnectionStatus('red', 'Local Storage Only');
+                updateConnectionStatus('red', 'Server Disconnected — Retrying...');
             }
             showToast((restored ? '🔄 Session restored. ' : '✅ Welcome! ') + statusMsg, sheetsInitialized ? 'success' : 'info');
         }
@@ -3599,7 +3342,6 @@ Management</textarea></div>
                 const user = users.find(u => String(u.id) === String(currentUser.id));
                 if (user) user.password = newP;
                 currentUser.password = newP;
-                StorageManager.saveUsersLocal(users);
                 alert('Password updated successfully!');
                 closeModal();
             };
@@ -3740,7 +3482,6 @@ Management</textarea></div>
                     'Cannot delete the only admin user.'); return; }
             if (confirm(`Delete user "${u.name}"? This cannot be undone.`)) {
                 users = users.filter(x => x.id !== id);
-                StorageManager.saveUsersLocal(users);
                 if (SheetAPI.isConfigured() && sheetsInitialized) {
                     const result = await SheetAPI.fetchFromSheet('deleteUser', { id });
                     if (!result.success) { showToast(result.error || 'Failed to delete user on server.', 'error'); return; }
@@ -3762,7 +3503,6 @@ Management</textarea></div>
                 });
                 if (!result.success) { alert(result.error || 'Unable to reset password.'); return; }
                 u.password = newPass.trim();
-                StorageManager.saveUsersLocal(users);
                 alert(`Password for "${u.name}" has been reset.`);
                 renderUserTable();
             }
@@ -3821,8 +3561,7 @@ Management</textarea></div>
                         String(currentUser.username || '').toLowerCase() === String(u.username || '').toLowerCase()
                     )) {
                         currentUser = { ...currentUser, ...freshUser };
-                        StorageManager.saveSessionLocal(currentUser);
-                        applyTabPermissions();
+                                applyTabPermissions();
                     }
 
                     renderUserTable();
@@ -3960,8 +3699,7 @@ Management</textarea></div>
             }
             if (confirm(`Delete dealer "${name}"? This cannot be undone.`)) {
                 delete dealerData[name];
-                StorageManager.saveDealersLocal(dealerData);
-                if (SheetAPI.isConfigured() && sheetsInitialized) {
+                    if (SheetAPI.isConfigured() && sheetsInitialized) {
                     const result = await SheetAPI.fetchFromSheet('deleteDealer', { name });
                     if (!result.success) { showToast(result.error || 'Failed to delete dealer on server.', 'error'); return; }
                 }
@@ -3989,7 +3727,6 @@ Management</textarea></div>
             const reader = new FileReader();
             reader.onloadend = function() {
                 stampDataURL = reader.result;
-                localStorage.setItem('customStamp', stampDataURL);
                 generatePAL();
                 generateDO();
                 input.value = '';
@@ -4000,7 +3737,6 @@ Management</textarea></div>
 
         function removeStamp() {
             // Remove custom upload and restore automatic repository stamp.
-            localStorage.removeItem('customStamp');
             stampDataURL = DEFAULT_STAMP_URL;
             generatePAL();
             generateDO();
@@ -4774,7 +4510,7 @@ Management</textarea></div>
         //  PRINT EVENT HANDLERS
         //  Every Print button FIRST saves the current document directly to
         //  Server. Printing is cancelled if the backend save fails.
-        //  No business document is written to localStorage.
+        //  No business document is written to browser storage.
         // ================================================================
         async function autoSaveBeforePrint(type, data, title, buildHtml, isPAL = false, isDO = false, logDetails = '') {
             const printBtn = {
@@ -5636,30 +5372,97 @@ Management</textarea></div>
         }
 
         // ================================================================
+        //  RESET CURRENT DATA-ENTRY TAB
+        //  Resets only the visible form; saved server records are untouched.
+        // ================================================================
+        function resetTabForm(pageId) {
+            const page = document.getElementById(pageId);
+            if (!page) return;
+
+            page.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.type === 'button' || el.type === 'submit' || el.type === 'reset') return;
+
+                if (el.tagName === 'SELECT') {
+                    Array.from(el.options).forEach(opt => opt.selected = opt.defaultSelected);
+                    if (el.selectedIndex < 0 && el.options.length) el.selectedIndex = 0;
+                } else if (el.type === 'checkbox' || el.type === 'radio') {
+                    el.checked = el.defaultChecked;
+                } else {
+                    el.value = el.defaultValue;
+                }
+            });
+
+            // Generated document numbers should be empty after a reset.
+            ['invNumber', 'receiptNumber'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            // Restore today's date for document/calculator forms.
+            const today = new Date().toISOString().split('T')[0];
+            ['invDate', 'receiptDate', 'palDate', 'doDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = today;
+            });
+
+            // Rebuild dynamic invoice/receipt item rows.
+            if (pageId === 'invoicePage' && typeof initInvoiceItems === 'function') {
+                initInvoiceItems();
+                window._editingDoc = null;
+                if (typeof generateInvoice === 'function') generateInvoice();
+            }
+
+            if (pageId === 'receiptPage' && typeof initReceiptItems === 'function') {
+                initReceiptItems();
+                window._editingDoc = null;
+                if (typeof generateReceipt === 'function') generateReceipt();
+            }
+
+            if (pageId === 'gstPage' && typeof calcGst === 'function') {
+                calcGst();
+            }
+
+            if (pageId === 'letterPage' && typeof generateLetter === 'function') {
+                window._editingDoc = null;
+                generateLetter();
+            }
+
+            if (pageId === 'palPage') {
+                window._editingDoc = null;
+                if (typeof formatAllCurrencyInputs === 'function') formatAllCurrencyInputs();
+                if (typeof updateCalculations === 'function') updateCalculations();
+                if (typeof generatePAL === 'function') generatePAL();
+            }
+
+            if (pageId === 'doPage') {
+                window._editingDoc = null;
+                if (typeof updateDONetPayable === 'function') updateDONetPayable();
+                if (typeof generateDO === 'function') generateDO();
+            }
+
+            showToast('Current tab has been reset. Saved records are unchanged.', 'info');
+        }
+
+        document.querySelectorAll('[data-reset-tab]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const pageId = this.getAttribute('data-reset-tab');
+                resetTabForm(pageId);
+            });
+        });
+
+        // ================================================================
         //  INIT
         // ================================================================
         (async function init() {
-            // FAST START: load cached data immediately. Do not block the login screen
-            // while Google Apps Script initializes seven sheets one-by-one.
-            updateConnectionStatus('connecting', 'Ready — checking server in background...');
+            updateConnectionStatus('connecting', 'Connecting to Server...');
             updateDateTimeDisplay();
 
-            const cachedUsers = StorageManager.getUsersLocal();
-            if (cachedUsers && cachedUsers.length) {
-                users = cachedUsers;
-            } else {
-                users = JSON.parse(JSON.stringify(DEFAULT_USERS));
-                StorageManager.saveUsersLocal(users);
-            }
-
-            const cachedDealers = StorageManager.getDealersLocal();
-            dealerData = (cachedDealers && Object.keys(cachedDealers).length)
-                ? cachedDealers
-                : JSON.parse(JSON.stringify(DEFAULT_DEALERS));
-            StorageManager.saveDealersLocal(dealerData);
+            // No browser cache/default business data is loaded. All persistent data
+            // comes from Google Sheets through the Apps Script backend.
+            users = [];
+            dealerData = {};
 
             calcGst();
-            populateDealerDropdowns();
             setupPALListeners();
             setupDOListeners();
             generateDO();
@@ -5676,52 +5479,22 @@ Management</textarea></div>
             generateLetter();
             updateStorageStatus();
 
-            // Restore the previous authenticated session after a page refresh.
-            // Role is refreshed from local/server user data, so disabled accounts are not restored.
-            const savedSession = StorageManager.getSessionLocal();
-            // sessionStorage survives refresh but is cleared when this browser tab/window is closed.
-            if (savedSession && !StorageManager.hasCurrentTabSession()) StorageManager.clearSessionLocal();
-            if (savedSession && savedSession.user && StorageManager.hasCurrentTabSession()) {
-                const savedUser = savedSession.user;
-                const localMatch = users.find(u =>
-                    (savedUser.id && String(u.id) === String(savedUser.id)) ||
-                    String(u.username || '').toLowerCase() === String(savedUser.username || '').toLowerCase()
-                );
-                const restoredUser = localMatch ? { ...savedUser, ...localMatch } : savedUser;
-                if (restoredUser && restoredUser.active !== false && restoredUser.username) {
-                    currentUser = restoredUser;
-                    enterDashboard({ restored: true, activePage: savedSession.activePage || '' });
-                } else {
-                    StorageManager.clearSessionLocal();
-                }
-            }
-
-            // Server refresh is deliberately non-blocking.
             if (SheetAPI.isConfigured()) {
-                setTimeout(async () => {
-                    try {
-                        await initializeGoogleSheets();
-                        // Refresh user/dealer caches after connection is ready.
+                try {
+                    const connected = await initializeGoogleSheets();
+                    if (connected) {
                         await Promise.all([loadUsers(), loadDealers()]);
-                        updateStorageStatus();
                         populateDealerDropdowns();
-                        if (currentUser) {
-                            const fresh = users.find(u => String(u.id) === String(currentUser.id) ||
-                                String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
-                            if (fresh) {
-                                currentUser = { ...currentUser, ...fresh };
-                                StorageManager.saveSessionLocal(currentUser);
-                                applyTabPermissions();
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('Background server refresh failed:', err);
-                        updateConnectionStatus('red', 'Local mode — server unavailable');
                         updateStorageStatus();
                     }
-                }, 50);
+                } catch (err) {
+                    console.warn('Initial server connection failed. Automatic retry remains active.', err);
+                    updateConnectionStatus('red', 'Server Disconnected — Retrying...');
+                    updateStorageStatus();
+                }
             } else {
-                updateConnectionStatus('red', 'Local Storage Only');
+                updateConnectionStatus('red', 'Server Not Configured');
+                updateStorageStatus();
             }
         })();
 
