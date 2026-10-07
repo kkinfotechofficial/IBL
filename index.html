@@ -281,9 +281,23 @@
             display:flex;
             justify-content:center;
             align-items:center;
+            gap:10px;
             margin:0 0 14px 0;
             width:100%;
+            flex-wrap:wrap;
         }
+        .login-server-health {
+            font-size:12px;
+            font-weight:600;
+            padding:6px 12px;
+            border-radius:40px;
+            border:1px solid var(--border-color);
+            background:var(--bg-card);
+            color:var(--text-muted);
+        }
+        .login-server-health.connected { color:var(--signal-green); border-color:var(--signal-green); }
+        .login-server-health.disconnected { color:var(--signal-red); border-color:var(--signal-red); }
+        .login-server-health.connecting { color:var(--text-muted); }
         .login-server-icon {
             position:relative;
             width:46px;
@@ -1723,9 +1737,26 @@
             .login-card .brand-icon .kk-company-logo { height:74px; }
             .top-header .logo-text .kk-company-logo { height:38px; max-width:180px; }
         }
+    
+        /* ===== SERVER SAVE PROGRESS ===== */
+        .save-progress-overlay{position:fixed;inset:0;background:rgba(3,10,20,.42);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:99999}
+        .save-progress-overlay.show{display:flex}
+        .save-progress-card{width:min(420px,calc(100vw - 36px));background:var(--card-bg,#fff);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+        .save-progress-title{font-weight:800;font-size:17px;margin-bottom:6px}.save-progress-sub{font-size:12px;color:var(--text-muted);margin-bottom:16px}
+        .save-progress-track{height:12px;border-radius:999px;background:#e7edf5;overflow:hidden}.save-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#22c55e,#06b6d4);transition:width .25s ease}
+        .save-progress-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px}.save-progress-percent{font-weight:800}
     </style>
 </head>
 <body data-theme="light">
+    <div class="save-progress-overlay" id="saveProgressOverlay" aria-hidden="true">
+        <div class="save-progress-card">
+            <div class="save-progress-title" id="saveProgressTitle">Saving to Server…</div>
+            <div class="save-progress-sub" id="saveProgressSub">Please wait while the server processes your data.</div>
+            <div class="save-progress-track"><div class="save-progress-fill" id="saveProgressFill"></div></div>
+            <div class="save-progress-row"><span id="saveProgressStatus">Preparing…</span><span class="save-progress-percent" id="saveProgressPercent">0%</span></div>
+        </div>
+    </div>
+
 
     <!-- GitHub Pages frontend. Google Apps Script URL is configured in the JavaScript CONFIGURATION section. -->
     <!-- ========== LOGIN PAGE ========== -->
@@ -1739,6 +1770,7 @@
                 <i class="fas fa-server" id="loginServerIcon"></i>
                 <span class="login-server-dot off" id="loginServerSignal" aria-hidden="true"></span>
             </button>
+            <span class="login-server-health connecting" id="loginServerHealth">Connecting to Server…</span>
         </div>
         <div class="login-card">
             <div class="brand-icon">
@@ -1747,7 +1779,7 @@
             <p class="subtitle">Secure Banking Login</p>
             <div class="form-group">
                 <label for="loginUsername">Username</label>
-                <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="loginUsername" placeholder="Enter username" /></div>
+                <div class="input-wrap"><i class="fas fa-user"></i><input type="text" id="loginUsername" placeholder="Enter username or ID" /></div>
             </div>
             <div class="form-group">
                 <label for="loginPassword">Password</label>
@@ -2173,39 +2205,6 @@ Management</textarea></div>
         // ================================================================
         //  DEFAULT DATA (for first-time setup)
         // ================================================================
-        const DEFAULT_USERS = [
-            { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Admin User', email: 'admin@kkinfotech.com', tabs: ['dashboardPage', 'usersPage', 'gstPage', 'invoicePage', 'receiptPage', 'letterPage', 'palPage', 'doPage', 'dealersPage'] },
-
-        ];
-
-        const DEFAULT_DEALERS = {
-            "BANERJEE AUTO CORPORATION PVT LTD": { city: "DURGAPUR", addr1: "DURGAPUR", addr2: "DURGAPUR", addr3: "DURGAPUR, WB" },
-            "RUDRA AUTOMART PVT LTD": { city: "ASANSOL", addr1: "BANKIDANGA", addr2: "NH2", addr3: "WEST BENGAL - 713340" },
-            "SAHA ENTERPRISE": { city: "BIRBHUM", addr1: "BIRBHUM", addr2: "BIRBHUM", addr3: "BIRBHUM" },
-            "TARA MAA E VEHICLE": { city: "BANKURA", addr1: "BANKURA", addr2: "BANKURA", addr3: "BANKURA" },
-            "JANANI CYCLE STORE AND E RICKSHAW": { city: "BIRBHUM", addr1: "BIRBHUM", addr2: "BIRBHUM", addr3: "BIRBHUM" },
-            "SALUJA AUTO RETAILS PRIVATE LIMITED": { city: "BARDHAMAN", addr1: "BARDHAMAN", addr2: "BARDHAMAN", addr3: "BARDHAMAN" },
-            "BHAI BHAI MOTORS": { city: "BIRBHUM", addr1: "BIRBHUM", addr2: "BIRBHUM", addr3: "BIRBHUM" },
-            "DURGA INFOTECH": { city: "BURDWAN", addr1: "BURDWAN", addr2: "BURDWAN", addr3: "BURDWAN" },
-            "RAJ AUTOMOBILES": { city: "DEOGHAR", addr1: "DEOGHAR", addr2: "DEOGHAR", addr3: "DEOGHAR" },
-            "SINGH WHEELS": { city: "ASANSOL", addr1: "ASANSOL", addr2: "ASANSOL", addr3: "ASANSOL" },
-            "TRIDEV WHEELERS PRIVATE LIMITED": { city: "DEOGHAR", addr1: "DEOGHAR", addr2: "DEOGHAR", addr3: "DEOGHAR" },
-            "MAA CHANCHALA MOTORS": { city: "JAMTARA", addr1: "JAMTARA", addr2: "JAMTARA", addr3: "JAMTARA" },
-            "MAA AUTOMOBILES": { city: "KULTI", addr1: "KULTI", addr2: "KULTI", addr3: "KULTI" },
-            "N H TRADERS": { city: "KULTI", addr1: "KULTI", addr2: "KULTI", addr3: "KULTI" },
-            "AMAN E RICKSHAW": { city: "ASANSOL", addr1: "ASANSOL", addr2: "ASANSOL", addr3: "ASANSOL" },
-            "R.H AUTOMOBILES PVT LTD": { city: "PURULIA", addr1: "PURULIA", addr2: "PURULIA", addr3: "PURULIA" },
-            "BIJAY MOTORS": { city: "ASANSOL", addr1: "ASANSOL", addr2: "ASANSOL", addr3: "ASANSOL" },
-            "MASOOM ENTERPRISE": { city: "RANIGANJ", addr1: "RANIGANJ", addr2: "RANIGANJ", addr3: "RANIGANJ" },
-            "GATI MOTORS PVT LTD": { city: "DURGAPUR", addr1: "DURGAPUR", addr2: "DURGAPUR", addr3: "DURGAPUR" },
-            "PURULIA TOTO SERVICE CENTRE": { city: "PURULIA", addr1: "PURULIA", addr2: "PURULIA", addr3: "PURULIA" },
-            "RATAN MOTORS": { city: "DHANBAD", addr1: "DHANBAD", addr2: "DHANBAD", addr3: "DHANBAD" },
-            "HELIWAL AUTOCORP": { city: "DHANBAD", addr1: "DHANBAD", addr2: "DHANBAD", addr3: "DHANBAD" },
-            "POWER MOTORS": { city: "BOKARO", addr1: "BOKARO", addr2: "BOKARO", addr3: "BOKARO" },
-            "ASANSOL BIKE BAZAR": { city: "ASANSOL", addr1: "ASANSOL", addr2: "ASANSOL", addr3: "ASANSOL" },
-            "DEMO": { city: "DURGAPUR", addr1: "DURGAPUR", addr2: "DURGAPUR", addr3: "DURGAPUR" }
-        };
-
         // ================================================================
         //  CLIENT DATA POLICY
         // ================================================================
@@ -2234,6 +2233,70 @@ Management</textarea></div>
         // ================================================================
         //  SHEET API (Google Apps Script with Improved Error Handling)
         // ================================================================
+        // ================================================================
+        //  SAVE PROGRESS UI
+        // ================================================================
+        let saveProgressTimer = null;
+        let saveProgressValue = 0;
+        function isWriteAction(action) {
+            const a = String(action || '').trim();
+            if (a === 'saveUserLog') return false;
+            return /^(save|delete|reset|change|restore|updateUserAccess)/i.test(a);
+        }
+        function showSaveProgress(title='Saving to Server…', sub='Please wait while the server processes your data.') {
+            const o=document.getElementById('saveProgressOverlay'), f=document.getElementById('saveProgressFill'), p=document.getElementById('saveProgressPercent'), s=document.getElementById('saveProgressStatus'), t=document.getElementById('saveProgressTitle'), ss=document.getElementById('saveProgressSub');
+            if(!o) return;
+            clearInterval(saveProgressTimer); saveProgressValue=8;
+            t.textContent=title; ss.textContent=sub; f.style.width=saveProgressValue+'%'; p.textContent=saveProgressValue+'%'; s.textContent='Connecting to Server…'; o.classList.add('show');
+            saveProgressTimer=setInterval(()=>{ if(saveProgressValue<90){ saveProgressValue=Math.min(90,saveProgressValue+Math.max(2,Math.round((90-saveProgressValue)*.12))); f.style.width=saveProgressValue+'%'; p.textContent=saveProgressValue+'%'; s.textContent=saveProgressValue<35?'Sending data…':saveProgressValue<70?'Server is saving data…':'Verifying saved data…'; } },350);
+        }
+        function finishSaveProgress(success=true,message='Saved successfully.') {
+            const o=document.getElementById('saveProgressOverlay'), f=document.getElementById('saveProgressFill'), p=document.getElementById('saveProgressPercent'), s=document.getElementById('saveProgressStatus');
+            if(!o) return;
+            clearInterval(saveProgressTimer); saveProgressValue=success?100:0; f.style.width=saveProgressValue+'%'; p.textContent=saveProgressValue+'%'; s.textContent=success?message:'Save failed.';
+            setTimeout(()=>o.classList.remove('show'),success?500:700);
+        }
+
+        function showLoadingProgress(title='Data loading from Server…', sub='Please wait while your latest data is being loaded.') {
+            const o=document.getElementById('saveProgressOverlay'), f=document.getElementById('saveProgressFill'), p=document.getElementById('saveProgressPercent'), s=document.getElementById('saveProgressStatus'), t=document.getElementById('saveProgressTitle'), ss=document.getElementById('saveProgressSub');
+            if(!o) return;
+            clearInterval(saveProgressTimer);
+            saveProgressValue=8;
+            t.textContent=title;
+            ss.textContent=sub;
+            f.style.width=saveProgressValue+'%';
+            p.textContent=saveProgressValue+'%';
+            s.textContent='Connecting to Server…';
+            o.classList.add('show');
+            saveProgressTimer=setInterval(()=>{
+                if(saveProgressValue<92){
+                    saveProgressValue=Math.min(92,saveProgressValue+Math.max(2,Math.round((92-saveProgressValue)*.12)));
+                    f.style.width=saveProgressValue+'%';
+                    p.textContent=saveProgressValue+'%';
+                    s.textContent=saveProgressValue<35?'Connecting to Server…':saveProgressValue<70?'Data loading from Server…':'Processing server data…';
+                }
+            },350);
+        }
+        function finishLoadingProgress(success=true,message='Data loaded from Server.') {
+            const o=document.getElementById('saveProgressOverlay'), f=document.getElementById('saveProgressFill'), p=document.getElementById('saveProgressPercent'), s=document.getElementById('saveProgressStatus');
+            if(!o) return;
+            clearInterval(saveProgressTimer);
+            saveProgressValue=success?100:0;
+            f.style.width=saveProgressValue+'%';
+            p.textContent=saveProgressValue+'%';
+            s.textContent=success?message:'Data loading failed.';
+            setTimeout(()=>o.classList.remove('show'),success?500:700);
+        }
+        function cancelProgressOverlay() {
+            clearInterval(saveProgressTimer);
+            saveProgressTimer=null;
+            const o=document.getElementById('saveProgressOverlay');
+            if(o) {
+                o.classList.remove('show');
+                o.setAttribute('aria-hidden','true');
+            }
+        }
+
         const SheetAPI = {
             isConfigured() {
                 return GOOGLE_APPS_SCRIPT_URL &&
@@ -2250,6 +2313,8 @@ Management</textarea></div>
                 const timeoutMs = Number(options.timeout || 15000);
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+                const showProgress = isWriteAction(action);
+                if (showProgress) showSaveProgress(action === 'saveUser' ? 'Saving User…' : 'Saving Data to Server…');
                 try {
                     // Use a simple text/plain POST so GitHub Pages does not trigger
                     // a CORS preflight. Apps Script Web Apps commonly redirect the
@@ -2278,8 +2343,10 @@ Management</textarea></div>
                     if (!result || result.success === false) {
                         throw new Error(result?.error || 'Server returned an error.');
                     }
+                    if (showProgress) finishSaveProgress(true, 'Saved and verified by Server.');
                     return { success: true, ...result };
                 } catch (err) {
+                    if (showProgress) finishSaveProgress(false, 'Server rejected the save.');
                     if (err?.name === 'AbortError') {
                         throw new Error('Server request timed out. Retrying automatically.');
                     }
@@ -2312,6 +2379,7 @@ Management</textarea></div>
         let serverRetryTimer = null;
         let serverRetryInProgress = false;
         let serverRetryNoticeShown = false;
+        let serverHealthPromise = null;
 
         // ================================================================
         //  CONNECTION STATUS INDICATOR
@@ -2353,40 +2421,59 @@ Management</textarea></div>
                 loginServerButton.title = text.textContent || 'Server connection status';
                 loginServerButton.setAttribute('aria-label', text.textContent || 'Server connection status. Click to reconnect');
             }
+            const loginHealth = document.getElementById('loginServerHealth');
+            if (loginHealth) {
+                loginHealth.textContent = text.textContent || 'Server status';
+                loginHealth.className = 'login-server-health ' + (status === 'green' ? 'connected' : status === 'red' ? 'disconnected' : 'connecting');
+            }
+        }
+
+        async function checkServerHealth() {
+            if (!SheetAPI.isConfigured()) {
+                sheetsInitialized = false;
+                updateConnectionStatus('red', 'Server Not Configured');
+                return false;
+            }
+            if (serverHealthPromise) return serverHealthPromise;
+
+            updateConnectionStatus('connecting', 'Connecting to Server…');
+            serverHealthPromise = (async () => {
+                try {
+                    // Fast server health probe for login.
+                    // Do not initialize/load application sheets before login.
+                    const result = await SheetAPI.fetchFromSheet('serverHealth', {}, { timeout: 10000 });
+                    if (!result || result.success !== true) throw new Error(result?.error || 'Server is unavailable.');
+                    users = Array.isArray(result.data) ? result.data : [];
+                    sheetsInitialized = true;
+                    updateConnectionStatus('green', 'Server Connected ✓');
+                    return true;
+                } catch (err) {
+                    sheetsInitialized = false;
+                    updateConnectionStatus('red', 'Server Disconnected — Retrying...');
+                    console.warn('Server health check failed; automatic retry continues:', err);
+                    return false;
+                } finally {
+                    serverHealthPromise = null;
+                }
+            })();
+            return serverHealthPromise;
         }
 
         async function reconnectToServer() {
             const btn = document.getElementById('reconnectServerBtn') || document.getElementById('loginServerButton');
             if (!btn || btn.disabled) return;
-            if (!SheetAPI.isConfigured()) {
-                updateConnectionStatus('red', 'Server Not Configured');
-                showToast('⚠️ Google Apps Script server URL is not configured.', 'error');
-                return;
-            }
             btn.disabled = true; btn.classList.add('reconnecting');
-            updateConnectionStatus('connecting', 'Reconnecting...');
-            sheetsInitialized = false;
             try {
-                const connected = await initializeGoogleSheets();
-                if (!connected) {
-                    updateConnectionStatus('red', 'Server Disconnected — Retrying...');
-                    showToast('⚠️ Server is unavailable. Automatic retry will continue.', 'error');
-                } else {
-                    try {
-                        await Promise.all([loadUsers(), loadDealers()]);
-                        populateDealerDropdowns();
-                        updateStorageStatus();
-                    } catch (refreshErr) {
-                        console.warn('Connected, but backend data refresh failed:', refreshErr);
+                const connected = await checkServerHealth();
+                if (connected) {
+                    try { await loadUsers(); } catch (_) {}
+                    if (currentUser) {
+                        try { await loadDealers(); populateDealerDropdowns(); } catch (_) {}
                     }
-                    updateConnectionStatus('green', 'Server Connected ✓');
                     showToast('✅ Server reconnected successfully.', 'success');
+                } else {
+                    showToast('⚠️ Server is unavailable. Automatic retry will continue.', 'error');
                 }
-            } catch (err) {
-                console.error('Reconnect failed:', err);
-                sheetsInitialized = false;
-                updateConnectionStatus('red', 'Connection Failed');
-                showToast('❌ Reconnection failed: ' + (err.message || 'Unknown error'), 'error');
             } finally {
                 btn.disabled = false; btn.classList.remove('reconnecting');
             }
@@ -2401,25 +2488,23 @@ Management</textarea></div>
                 if (!SheetAPI.isConfigured() || sheetsInitialized || serverRetryInProgress) return;
                 serverRetryInProgress = true;
                 try {
-                    const connected = await initializeGoogleSheets();
+                    const connected = await checkServerHealth();
                     if (connected) {
-                        serverRetryNoticeShown = false;
-                        try {
-                            await Promise.all([loadUsers(), loadDealers()]);
-                            populateDealerDropdowns();
-                            updateStorageStatus();
-                            if (currentUser) {
-                                const fresh = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
-                                if (fresh) { currentUser = { ...currentUser, ...fresh }; updateHeaderForCurrentUser(); applyTabPermissions(); }
+                        try { await loadUsers(); } catch (_) {}
+                        if (currentUser) {
+                            try {
+                                await loadDealers();
+                                populateDealerDropdowns();
+                            } catch (refreshErr) {
+                                console.warn('Dealer refresh after reconnect failed:', refreshErr);
                             }
-                        } catch (refreshErr) {
-                            console.warn('Server data refresh after reconnect failed:', refreshErr);
+                            const fresh = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
+                            if (fresh) {
+                                currentUser = { ...currentUser, ...fresh };
+                                updateHeaderForCurrentUser();
+                            }
                         }
-                    }
-                } catch (err) {
-                    if (!serverRetryNoticeShown) {
-                        console.warn('Server unavailable. Automatic retry will continue.', err);
-                        serverRetryNoticeShown = true;
+                        serverRetryNoticeShown = false;
                     }
                 } finally {
                     serverRetryInProgress = false;
@@ -2430,50 +2515,8 @@ Management</textarea></div>
         startServerAutoRetry();
 
         async function initializeGoogleSheets() {
-            if (sheetsInitialized) return true;
-
-            if (!SheetAPI.isConfigured()) {
-                updateConnectionStatus('red', 'Server Not Configured');
-                return false;
-            }
-
-            if (serverRetryInProgress) return false;
-            serverRetryInProgress = true;
-            updateConnectionStatus('connecting', 'Connecting to Server...');
-
-            try {
-                // IMPORTANT: Do NOT require every sheet to initialize before
-                // declaring the server connected. A single missing/renamed sheet
-                // previously made the whole application show "Server Disconnected"
-                // even when the Apps Script Web App itself was reachable.
-                let health = null;
-                try {
-                    health = await SheetAPI.fetchFromSheet('testConnection', {}, { timeout: 12000 });
-                } catch (healthErr) {
-                    console.warn('testConnection failed; trying a real backend read:', healthErr);
-                }
-
-                // Some older Code.gs versions do not implement testConnection.
-                // A successful getUsers/getDealers call is also a valid health check.
-                if (!health || health.success !== true) {
-                    const probe = await SheetAPI.fetchFromSheet('getUsers', {}, { timeout: 15000 });
-                    if (!probe || probe.success !== true) {
-                        throw new Error(probe?.error || 'Backend did not respond successfully.');
-                    }
-                    if (Array.isArray(probe.data)) users = probe.data;
-                }
-
-                sheetsInitialized = true;
-                updateConnectionStatus('green', 'Server Connected ✓');
-                return true;
-            } catch (error) {
-                sheetsInitialized = false;
-                updateConnectionStatus('red', 'Server Disconnected — Retrying...');
-                console.warn('Server connection failed. Automatic retry remains active:', error);
-                return false;
-            } finally {
-                serverRetryInProgress = false;
-            }
+            // Compatibility wrapper for the rest of the application.
+            return checkServerHealth();
         }
 
         // ================================================================
@@ -3125,10 +3168,12 @@ Management</textarea></div>
 
         async function attemptLogin() {
             if (window._loginBusy) return;
-            const username = loginUsername.value.trim();
-            const password = loginPassword.value.trim();
-            let role = '';
-            if (!username || !password) { loginError.textContent = 'Please enter username and password.'; if (username) addUserLog('LOGIN FAILED', 'Username or password missing', { username, role: 'unknown' }); return; }
+            const identifier = loginUsername.value.trim();
+            const password = loginPassword.value;
+            if (!identifier || !password) {
+                loginError.textContent = 'Please enter username/ID and password.';
+                return;
+            }
 
             window._loginBusy = true;
             const btn = document.getElementById('loginBtn');
@@ -3138,40 +3183,38 @@ Management</textarea></div>
             loginError.textContent = '';
 
             try {
-                // Backend-only authentication: credentials are always verified by the Server.
                 if (!SheetAPI.isConfigured()) throw new Error('Server backend is not configured.');
+                // The Users sheet is the first/fastest backend dependency.
+                // No progress bar is shown during credential validation.
                 if (!sheetsInitialized) {
-                    const connected = await initializeGoogleSheets();
-                    if (!connected) throw new Error('Server backend is unavailable. Retrying connection automatically.');
+                    const connected = await checkServerHealth();
+                    if (!connected) throw new Error('Server backend is unavailable. Automatic retry is active.');
                 }
 
-                let loginResult;
-                try {
-                    loginResult = await SheetAPI.fetchFromSheetStrict('login', { username, password, role: 'admin' });
-                } catch (adminErr) {
-                    // A transport/server error is not treated as a local fallback.
-                    throw adminErr;
-                }
+                const loginResult = await SheetAPI.fetchFromSheetStrict('login', {
+                    username: identifier,
+                    id: identifier,
+                    password
+                });
+
                 if (!loginResult.success || !loginResult.user) {
-                    loginResult = await SheetAPI.fetchFromSheetStrict('login', { username, password, role: 'user' });
-                }
-                if (!loginResult.success || !loginResult.user) {
-                    loginError.textContent = loginResult.error || 'Invalid username or password.';
-                    await addUserLog('LOGIN FAILED', 'Invalid username or password', { username, role: 'unknown' });
+                    // Failed sign-in: NO progress bar.
+                    loginError.textContent = loginResult.error || 'Invalid username/ID or password.';
                     return;
                 }
 
+                // Only after successful sign-in do we show the loading progress.
+                showLoadingProgress('Data loading from Server…', 'Sign in successful. Loading your latest server data.');
                 currentUser = loginResult.user;
                 users = Array.isArray(users) ? users : [];
                 const existing = users.find(u => String(u.id) === String(currentUser.id) || String(u.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase());
-                if (existing) Object.assign(existing, currentUser);
-                else users.push(currentUser);
+                if (existing) Object.assign(existing, currentUser); else users.push(currentUser);
                 updateHeaderForCurrentUser();
                 enterDashboard();
                 updateConnectionStatus('green', 'Server Connected ✓');
 
-                // Fetch fresh backend data after login; never use browser storage as a source.
                 try {
+                    // Load only the data required after login; login itself stays fast.
                     await Promise.all([loadUsers(), loadDealers()]);
                     populateDealerDropdowns();
                     updateStorageStatus();
@@ -3179,13 +3222,18 @@ Management</textarea></div>
                     if (fresh) currentUser = { ...currentUser, ...fresh };
                     updateHeaderForCurrentUser();
                     applyTabPermissions();
+                    finishLoadingProgress(true, 'Data loaded from Server.');
                 } catch (refreshErr) {
                     console.warn('Post-login backend refresh failed:', refreshErr);
+                    finishLoadingProgress(false, 'Unable to load all data from Server.');
+                    updateConnectionStatus('red', 'Server Disconnected — Retrying...');
+                    sheetsInitialized = false;
                 }
-                        } catch (err) {
-                loginError.textContent = 'Login error: ' + err.message;
-                addUserLog('LOGIN FAILED', 'Login error: ' + err.message, { username: loginUsername.value.trim(), role: 'unknown' });
+            } catch (err) {
+                loginError.textContent = err.message || 'Login failed.';
                 console.error('Login error:', err);
+                // Credential/server failure before successful login: ensure no progress remains visible.
+                cancelProgressOverlay();
             } finally {
                 window._loginBusy = false;
                 btn.disabled = false;
@@ -3268,14 +3316,15 @@ Management</textarea></div>
                 statusMsg = 'Server is configured but not connected. Please check your configuration.';
                 updateConnectionStatus('red', 'Server Connection Failed');
             } else {
-                statusMsg = 'Using Local Storage. Configure server URL for cloud sync.';
+                statusMsg = 'Server-only mode. All data is loaded from the backend server.';
                 updateConnectionStatus('red', 'Server Disconnected — Retrying...');
             }
             showToast((restored ? '🔄 Session restored. ' : '✅ Welcome! ') + statusMsg, sheetsInitialized ? 'success' : 'info');
         }
 
         function logout() {
-            addUserLog('LOGOUT', 'User signed out');
+            cancelProgressOverlay();
+            addUserLog('LOGOUT', 'User signed out').catch(err => console.warn('Logout log failed:', err));
             StorageManager.clearSessionLocal();
             currentUser = null;
             document.getElementById('dashboard').style.display = 'none';
@@ -3378,10 +3427,10 @@ Management</textarea></div>
             const tabLabels = { dashboardPage: 'Dashboard', gstPage: 'GST', invoicePage: 'Invoice', receiptPage: 'Receipt',
                 letterPage: 'Letter', palPage: 'PAL', doPage: 'DO', dealersPage: 'Dealers' };
             users.forEach(u => {
-                const isSelf = u.id === currentUser.id;
+                const isSelf = String(u.id) === String(currentUser.id);
                 const tabsStr = (u.tabs || []).map(t => tabLabels[t] || t).join(', ');
                 html +=
-                    `<tr><td><strong>${escapeHtml(u.name)}</strong><br/><span style="font-size:12px;color:var(--text-muted);">${escapeHtml(u.email || '')}</span></td><td>${escapeHtml(u.username)}</td><td><span class="badge ${u.role === 'admin' ? 'admin' : ''}">${escapeHtml(u.role)}</span></td><td style="font-size:12px;color:var(--text-muted);max-width:140px;">${escapeHtml(tabsStr || 'All')}</td><td style="text-align:right;"><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">${!isSelf ? `<button class="btn btn-primary btn-sm" onclick="editUser(${u.id})"><i class="fas fa-edit"></i></button>` : ''}${!isSelf ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>` : ''}${!isSelf ? `<button class="btn btn-outline btn-sm" onclick="resetUserPassword(${u.id})"><i class="fas fa-key"></i></button>` : ''}${!isSelf ? `<button class="btn btn-outline btn-sm" onclick="manageUserTabs(${u.id})"><i class="fas fa-layer-group"></i></button>` : ''}${isSelf ? `<span style="font-size:12px;color:var(--text-muted);">(you)</span>` : ''}</div></td></tr>`;
+                    `<tr><td><strong>${escapeHtml(u.name)}</strong><br/><span style="font-size:12px;color:var(--text-muted);">${escapeHtml(u.email || '')}</span></td><td>${escapeHtml(u.username)}</td><td><span class="badge ${u.role === 'admin' ? 'admin' : ''}">${escapeHtml(u.role)}</span></td><td style="font-size:12px;color:var(--text-muted);max-width:140px;">${escapeHtml(tabsStr || 'All')}</td><td style="text-align:right;"><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">${!isSelf ? `<button class="btn btn-primary btn-sm" onclick='editUser(${JSON.stringify(String(u.id))})'><i class="fas fa-edit"></i></button>` : ''}${!isSelf ? `<button class="btn btn-danger btn-sm" onclick='deleteUser(${JSON.stringify(String(u.id))})'><i class="fas fa-trash"></i></button>` : ''}${!isSelf ? `<button class="btn btn-outline btn-sm" onclick='resetUserPassword(${JSON.stringify(String(u.id))})'><i class="fas fa-key"></i></button>` : ''}${!isSelf ? `<button class="btn btn-outline btn-sm" onclick='manageUserTabs(${JSON.stringify(String(u.id))})'><i class="fas fa-layer-group"></i></button>` : ''}${isSelf ? `<span style="font-size:12px;color:var(--text-muted);">(you)</span>` : ''}</div></td></tr>`;
             });
             document.getElementById('userTableBody').innerHTML = html ||
                 `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No users found.</td></tr>`;
@@ -3417,10 +3466,10 @@ Management</textarea></div>
                 const newUserTabs = role === 'admin'
                     ? ['dashboardPage', 'usersPage', 'dealersPage']
                     : [];
-                const newUser = { id: Date.now(), username, password, role, name, email: email || '',
+                const newUser = { id: 'U_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), username, password, role, name, email: email || '',
                     tabs: newUserTabs };
-                users.push(newUser);
-                await saveUsers();
+                await saveUsers([newUser]);
+                await loadUsers();
                 renderUserTable();
                 updateDashboardStats();
                 closeModal();
@@ -3431,7 +3480,7 @@ Management</textarea></div>
 
         window.editUser = function(id) {
             if (currentUser?.role !== 'admin') return;
-            const u = users.find(x => x.id === id);
+            const u = users.find(x => String(x.id) === String(id));
             if (!u) return;
             modalTitle.textContent = 'Edit User';
             modalSub.textContent = `Editing ${u.name}`;
@@ -3476,12 +3525,12 @@ Management</textarea></div>
 
         window.deleteUser = async function(id) {
             if (currentUser?.role !== 'admin') return;
-            const u = users.find(x => x.id === id);
+            const u = users.find(x => String(x.id) === String(id));
             if (!u) return;
             if (u.role === 'admin' && users.filter(x => x.role === 'admin').length === 1) { alert(
                     'Cannot delete the only admin user.'); return; }
             if (confirm(`Delete user "${u.name}"? This cannot be undone.`)) {
-                users = users.filter(x => x.id !== id);
+                users = users.filter(x => String(x.id) !== String(id));
                 if (SheetAPI.isConfigured() && sheetsInitialized) {
                     const result = await SheetAPI.fetchFromSheet('deleteUser', { id });
                     if (!result.success) { showToast(result.error || 'Failed to delete user on server.', 'error'); return; }
@@ -3493,7 +3542,7 @@ Management</textarea></div>
 
         window.resetUserPassword = async function(id) {
             if (currentUser?.role !== 'admin') return;
-            const u = users.find(x => x.id === id);
+            const u = users.find(x => String(x.id) === String(id));
             if (!u) return;
             const newPass = prompt(`Reset password for ${u.name}. Enter new password:`, 'pass123');
             if (newPass !== null && newPass.trim().length > 0) {
@@ -3510,7 +3559,7 @@ Management</textarea></div>
 
         window.manageUserTabs = function(id) {
             if (currentUser?.role !== 'admin') return;
-            const u = users.find(x => x.id === id);
+            const u = users.find(x => String(x.id) === String(id));
             if (!u) return;
             const allTabs = [{ id: 'dashboardPage', label: 'Dashboard' }, { id: 'usersPage', label: 'Users' },
             { id: 'dealersPage', label: 'Dealers' }, { id: 'gstPage', label: 'GST Calculator' },
@@ -3541,7 +3590,14 @@ Management</textarea></div>
                 u.tabs = [...new Set(selected)];
 
                 try {
-                    await saveUsers([u]);
+                    const accessResult = await SheetAPI.fetchFromSheetStrict('updateUserAccess', {
+                        userId: u.id,
+                        role: u.role,
+                        tabs: u.tabs
+                    });
+                    if (!accessResult || accessResult.success !== true) {
+                        throw new Error(accessResult?.error || 'Server could not save tab access.');
+                    }
 
                     // Re-read permissions from Server so the UI reflects
                     // the backend value, not an optimistic local value.
@@ -5481,17 +5537,14 @@ Management</textarea></div>
 
             if (SheetAPI.isConfigured()) {
                 try {
-                    const connected = await initializeGoogleSheets();
-                    if (connected) {
-                        await Promise.all([loadUsers(), loadDealers()]);
-                        populateDealerDropdowns();
-                        updateStorageStatus();
-                    }
+                    // Fast startup: connect to the Server only. Dealers/documents are
+                    // loaded after successful login, so the login screen stays fast.
+                    await checkServerHealth();
                 } catch (err) {
-                    console.warn('Initial server connection failed. Automatic retry remains active.', err);
+                    console.warn('Initial Server connection failed. Automatic retry remains active.', err);
                     updateConnectionStatus('red', 'Server Disconnected — Retrying...');
-                    updateStorageStatus();
                 }
+                updateStorageStatus();
             } else {
                 updateConnectionStatus('red', 'Server Not Configured');
                 updateStorageStatus();
@@ -5547,3 +5600,4 @@ Management</textarea></div>
 
 </body>
 </html>
+w
